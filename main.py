@@ -22,6 +22,7 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 COLOR_EMPTY = COLOR_PALETTE[0]
+COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 
 class Shape:
     def __init__(self, point_list, width, height):
@@ -36,11 +37,12 @@ class GameEngine:
     ACTION_SEL_2 = 3
     ACTION_SEL_3 = 4
     ACTION_SEL_4 = 5
-    ACTION_ATTENSION_TOP = 6
-    ACTION_ATTENSION_BOTTOM = 7
-    ACTION_ATTENSION_LEFT = 8
-    ACTION_ATTENSION_RIGHT = 9
-    ACTION_MOVE_UNTIL_COLISSION = 10
+    ACTION_SEL_5 = 6
+    ACTION_ATTENSION_TOP = 7
+    ACTION_ATTENSION_BOTTOM = 8
+    ACTION_ATTENSION_LEFT = 9
+    ACTION_ATTENSION_RIGHT = 10
+    ACTION_MOVE_UNTIL_COLISSION = 11
 
     DIRECTION_TOP = 0
     DIRECTION_BOTTOM = 1
@@ -52,6 +54,7 @@ class GameEngine:
         self.width = len(input[0])
         self.height = len(input)
         self.shape_list = np.array([])
+        self.cur_sel = 0
         self.G = nx.Graph()
 
 
@@ -76,8 +79,6 @@ class GameEngine:
                 if (i == self.height - 1): down = down_left = down_right = -1
                 if (j == 0): left = up_left = down_left = -1
                 if (j == self.width - 1): right = up_right = down_right = -1
-
-                
 
                 self.G.add_node(idx)
                 
@@ -112,24 +113,12 @@ class GameEngine:
 
         for idx, shape in enumerate(self.shape_list):
             self.shape_list[idx] = np.array(list(shape))
-        
-        #print(self.shape_list)
-
-        # for s in list(nx.connected_components(self.G)):
-        #     self.shape_list = np.append(self.shape_list,  list(s))
-        #print(self.shape_list)
-        # nx.draw(self.G)
-        # plt.show()            
-
-
-
-        #self.shape_list = None
 
     def update_state_from_shape():
         pass
 
-    def select_shape(idx):
-        pass
+    def select_shape(self, idx):
+        self.cur_sel = idx
 
     def select_direct_attension(direction):
         pass
@@ -137,34 +126,34 @@ class GameEngine:
     def move_until_collision():
         pass
 
-    def do_action(action):
-        if (action == ACTION_SEL_0):
-            select_shape(0)
-        elif (action == ACTION_SEL_1):
-            select_shape(1)
-        elif (action == ACTION_SEL_2):
-            select_shape(2)
-        elif (action == ACTION_SEL_3):
-            select_shape(3)
-        elif (action == ACTION_SEL_4):
-            select_shape(4)
-        elif (action == ACTION_SEL_5):
-            select_shape(5)
-        elif (action == ACTION_ATTENSION_TOP):
-            select_direct_attension(DIRECTION_TOP)
-        elif (action == ACTION_ATTENSION_BOTTOM):
-            select_direct_attension(DIRECTION_BOTTOM)
-        elif (action == ACTION_ATTENSION_LEFT):
-            select_direct_attension(DIRECTION_LEFT)
-        elif (action == ACTION_ATTENSION_RIGHT):
-            select_direct_attension(DIRECTION_RIGHT)
-        elif (action == ACTION_MOVE_UNTIL_COLISSION):
-            move_until_colission()
+    def do_action(self, action):
+        if (action == GameEngine.ACTION_SEL_0):
+            self.select_shape(0)
+        elif (action == GameEngine.ACTION_SEL_1):
+            self.select_shape(1)
+        elif (action == GameEngine.ACTION_SEL_2):
+            self.select_shape(2)
+        elif (action == GameEngine.ACTION_SEL_3):
+            self.select_shape(3)
+        elif (action == GameEngine.ACTION_SEL_4):
+            self.select_shape(4)
+        elif (action == GameEngine.ACTION_SEL_5):
+            self.select_shape(5)
+        elif (action == GameEngine.ACTION_ATTENSION_TOP):
+            self.select_direct_attension(DIRECTION_TOP)
+        elif (action == GameEngine.ACTION_ATTENSION_BOTTOM):
+            self.select_direct_attension(DIRECTION_BOTTOM)
+        elif (action == GameEngine.ACTION_ATTENSION_LEFT):
+            self.select_direct_attension(DIRECTION_LEFT)
+        elif (action == GameEngine.ACTION_ATTENSION_RIGHT):
+            self.select_direct_attension(DIRECTION_RIGHT)
+        elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
+            self.move_until_colission()
 
 
 
 
-def draw_input(screen, input, shape_list):
+def draw_input(screen, input, shape_list, cur_sel):
     row_num = len(input)
     col_num = len(input[0])
 
@@ -187,6 +176,8 @@ def draw_input(screen, input, shape_list):
             i = point // col_num
             j = point % col_num
             #print(point, i, j)
+            if (idx == cur_sel):
+                pygame.draw.rect(screen, COLOR_SELECTED, (j*GRID_LENGTH, i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
             screen.blit(text_surface, dest=((j + 0.5) * GRID_LENGTH, (i + 0.5) * GRID_LENGTH))
 
     
@@ -217,9 +208,23 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_0:
+                print('pressed 0')
+                game_engine.do_action(GameEngine.ACTION_SEL_0)
+            elif event.key == pygame.K_1:
+                game_engine.do_action(GameEngine.ACTION_SEL_1)
+            elif event.key == pygame.K_2:
+                game_engine.do_action(GameEngine.ACTION_SEL_2)
+            elif event.key == pygame.K_3:
+                game_engine.do_action(GameEngine.ACTION_SEL_3)
+            elif event.key == pygame.K_4:
+                game_engine.do_action(GameEngine.ACTION_SEL_4)
+            elif event.key == pygame.K_5:
+                game_engine.do_action(GameEngine.ACTION_SEL_5)
 
     screen.fill(COLOR_PALETTE[0])
-    draw_input(screen, puzzle_input, game_engine.shape_list)
+    draw_input(screen, puzzle_input, game_engine.shape_list, game_engine.cur_sel)
     pygame.display.flip()
 
 pygame.quit()
