@@ -25,12 +25,27 @@ PAD_LENGTH = 50
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 
+class Grid:
+    def __init__(self, x, y, idx, shape_idx, color, game_engine):
+        self.x = x
+        self.y = y
+        self.idx = idx
+        self.shape_idx = shape_idx
+        self.color = color
+        self.game_engine = game_engine
+
+    def move_down(self):
+        self.y += 1
+        self.idx += game_engine.width
+
 class Shape:
     def __init__(self, point_list, width, height):
         self.point_list = point_list
         self.width = width
         self.height = height
         self.shape_list = np.array([1,2])
+
+    
 
 class GameEngine: 
     ACTION_SEL_0 = 1
@@ -75,7 +90,6 @@ class GameEngine:
                 up_right = up + 1
                 down_left = down - 1
                 down_right = down + 1
-                
 
                 if (i == 0): up = up_left = up_right = -1
                 if (i == self.height - 1): down = down_left = down_right = -1
@@ -113,15 +127,22 @@ class GameEngine:
         self.shape_list = np.array(list(nx.connected_components(self.G)))
         #print(self.shape_list[0])
 
-        for idx, shape in enumerate(self.shape_list):
-            self.shape_list[idx] = np.array(list(shape))
+        for shape_idx, shape in enumerate(self.shape_list):
+            grid_list = []
+            for point in list(shape):
+                i = point // self.width
+                j = point % self.width
+                #pdb.set_trace()
+                grid_list.append(Grid(i, j, point, shape_idx, self.state[point], self))
+            self.shape_list[shape_idx] = np.array(grid_list)
 
     def update_state_from_shape(self):
-        self.state = np.zeros(self.width * self.height)
+        self.state = np.zeros(self.width * self.height, dtype=np.int64)
 
-        # for shape in shape_list:
-        #     for point in shape:
-        #         self.state[]
+        for shape in self.shape_list:
+            for grid in shape:
+                #print(grid.color)
+                self.state[grid.idx] = grid.color
 
 
     def select_shape(self, idx):
@@ -130,35 +151,59 @@ class GameEngine:
     def select_direct_attension(self, direction):
         self.cur_attension = direction
 
-    def get_shape_idx(self, point):
-        pass
+    def get_shape_idx(self, point_idx):
+        for shape in self.shape_list:
+            for grid in shape:
+                if (grid.idx == point_idx):
+                    return grid.shape_idx
+        
+        return -1
 
     def move_down_until_collision(self):
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
 
         shape = self.shape_list[self.cur_sel]
 
-        while True:
-            delta = 0
-            for point in shape:
-                next_pos_in_direction = (i + delta + 1) * self.width + j
+        stop = False
+        delta = 0
 
-                i = next_pos_in_direction // self.width
-                j = next_pos_in_direction % self.width
-                if (i > self.height - 1): break
+        while True:
+            print(delta)
+            for point in shape:
+                i = point.x + delta + 1
+                j = point.y
+                if (i > self.height - 1): 
+                    stop = True
+                    break
+
+                next_pos_in_direction = i * self.width + j
+
+                # i = next_pos_in_direction // self.width
+                # j = next_pos_in_direction % self.width
+                
 
                 idx = self.get_shape_idx(next_pos_in_direction)
-                if (idx > 0 and idx != self.cur_sel): break
+                if (idx > 0 and idx != self.cur_sel): 
+                    stop = True
+                    break
 
-                delta += 1
+            if (stop):
+                break
+            delta += 1
+            
 
         if (delta == 0): return
 
-        for idx, point in shape:
-            shape[idx] += delta * self.width
+        #pdb.set_trace()
+        for grid in shape:
+            grid.move_down()
+
 
     def move_until_collision(self):
-        pass
+        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+
+        if (self.cur_attension == self.DIRECTION_BOTTOM):
+            self.move_down_until_collision()
 
     def do_action(self, action):
         if (action == GameEngine.ACTION_SEL_0):
@@ -187,14 +232,18 @@ class GameEngine:
 
 
 
-def draw_input(screen, input, shape_list, cur_sel, attension):
-    row_num = len(input)
-    col_num = len(input[0])
+def draw_input(screen, game_engine):
+    row_num = game_engine.height
+    col_num = game_engine.width
+    #print(game_engine.state)
+    #pdb.set_trace()
 
     for i in range(row_num):
         for j in range(col_num):
-            color = COLOR_PALETTE[input[i][j]]
-            pygame.draw.rect(screen, color, pygame.Rect(PAD_LENGTH + j*GRID_LENGTH, PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
+            
+            color = COLOR_PALETTE[game_engine.state[col_num * i + j]]
+            pygame.draw.rect(screen, color, pygame.Rect(PAD_LENGTH + j*GRID_LENGTH,
+                            PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
 
     for i in range(row_num + 1):
         pygame.draw.line(screen, (255, 255, 255), (PAD_LENGTH + 0, PAD_LENGTH +i * GRID_LENGTH), 
@@ -206,25 +255,25 @@ def draw_input(screen, input, shape_list, cur_sel, attension):
     font = pygame.font.Font('freesansbold.ttf', 16)
     
 
-    for idx, shape in enumerate(shape_list):
+    for idx, shape in enumerate(game_engine.shape_list):
         for point in shape:
             text_surface = font.render(str(idx), True, (125,125,125))
-            i = point // col_num
-            j = point % col_num
+            i = point.x
+            j = point.y
             #print(point, i, j)
-            if (idx == cur_sel):
+            if (idx == game_engine.cur_sel):
                 pygame.draw.rect(screen, COLOR_SELECTED, (PAD_LENGTH + j*GRID_LENGTH, PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
             screen.blit(text_surface, dest=(PAD_LENGTH + (j + 0.5) * GRID_LENGTH, PAD_LENGTH + (i + 0.5) * GRID_LENGTH))
 
 
-    if (attension == GameEngine.DIRECTION_TOP):
+    if (game_engine.cur_attension == GameEngine.DIRECTION_TOP):
         pygame.draw.circle(screen, COLOR_SELECTED, ((col_num * GRID_LENGTH + PAD_LENGTH * 2) // 2, PAD_LENGTH // 2), 15)
-    elif (attension == GameEngine.DIRECTION_BOTTOM):
+    elif (game_engine.cur_attension == GameEngine.DIRECTION_BOTTOM):
         pygame.draw.circle(screen, COLOR_SELECTED, ((col_num * GRID_LENGTH + PAD_LENGTH * 2) // 2, 
                             PAD_LENGTH * 2 + row_num * GRID_LENGTH - PAD_LENGTH // 2 ), 15)
-    elif (attension == GameEngine.DIRECTION_LEFT):
+    elif (game_engine.cur_attension == GameEngine.DIRECTION_LEFT):
         pygame.draw.circle(screen, COLOR_SELECTED, (PAD_LENGTH // 2, (PAD_LENGTH * 2 + row_num * GRID_LENGTH) // 2), 15)
-    elif (attension == GameEngine.DIRECTION_RIGHT):
+    elif (game_engine.cur_attension == GameEngine.DIRECTION_RIGHT):
         pygame.draw.circle(screen, COLOR_SELECTED, (col_num * GRID_LENGTH + PAD_LENGTH * 2 - PAD_LENGTH // 2, 
                             (PAD_LENGTH * 2 + row_num * GRID_LENGTH) // 2), 15)
 
@@ -277,9 +326,12 @@ while running:
                 game_engine.do_action(GameEngine.ACTION_ATTENSION_LEFT)
             elif event.key == pygame.K_RIGHT:
                 game_engine.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
+            elif event.key == pygame.K_SPACE:
+                game_engine.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
 
     screen.fill(COLOR_PALETTE[0])
-    draw_input(screen, puzzle_input, game_engine.shape_list, game_engine.cur_sel, game_engine.cur_attension)
+    game_engine.update_state_from_shape()
+    draw_input(screen, game_engine)
     pygame.display.flip()
 
 pygame.quit()
