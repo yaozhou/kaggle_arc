@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 
-INPUT_FILE = '/Users/yao/develop/ARC/data/training/de1cd16c.json'
+INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -21,6 +21,7 @@ COLOR_PALETTE = [
 ]
 
 GRID_LENGTH = 30
+PAD_LENGTH = 50
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 
@@ -45,9 +46,9 @@ class GameEngine:
     ACTION_MOVE_UNTIL_COLISSION = 11
 
     DIRECTION_TOP = 0
-    DIRECTION_BOTTOM = 1
-    DIRECTION_LEFT = 2
-    DIRECTION_RIGHT = 3
+    DIRECTION_BOTTOM = -1
+    DIRECTION_LEFT = -2
+    DIRECTION_RIGHT = -3
 
     def __init__(self, input):
         self.state = np.array(input).flatten()
@@ -55,6 +56,7 @@ class GameEngine:
         self.height = len(input)
         self.shape_list = np.array([])
         self.cur_sel = 0
+        self.cur_attension = self.DIRECTION_TOP
         self.G = nx.Graph()
 
 
@@ -120,10 +122,10 @@ class GameEngine:
     def select_shape(self, idx):
         self.cur_sel = idx
 
-    def select_direct_attension(direction):
-        pass
+    def select_direct_attension(self, direction):
+        self.cur_attension = direction
 
-    def move_until_collision():
+    def move_until_collision(self):
         pass
 
     def do_action(self, action):
@@ -140,32 +142,34 @@ class GameEngine:
         elif (action == GameEngine.ACTION_SEL_5):
             self.select_shape(5)
         elif (action == GameEngine.ACTION_ATTENSION_TOP):
-            self.select_direct_attension(DIRECTION_TOP)
+            self.select_direct_attension(self.DIRECTION_TOP)
         elif (action == GameEngine.ACTION_ATTENSION_BOTTOM):
-            self.select_direct_attension(DIRECTION_BOTTOM)
+            self.select_direct_attension(self.DIRECTION_BOTTOM)
         elif (action == GameEngine.ACTION_ATTENSION_LEFT):
-            self.select_direct_attension(DIRECTION_LEFT)
+            self.select_direct_attension(self.DIRECTION_LEFT)
         elif (action == GameEngine.ACTION_ATTENSION_RIGHT):
-            self.select_direct_attension(DIRECTION_RIGHT)
+            self.select_direct_attension(self.DIRECTION_RIGHT)
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
             self.move_until_colission()
 
 
 
 
-def draw_input(screen, input, shape_list, cur_sel):
+def draw_input(screen, input, shape_list, cur_sel, attension):
     row_num = len(input)
     col_num = len(input[0])
 
     for i in range(row_num):
         for j in range(col_num):
             color = COLOR_PALETTE[input[i][j]]
-            pygame.draw.rect(screen, color, pygame.Rect(j*GRID_LENGTH, i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
+            pygame.draw.rect(screen, color, pygame.Rect(PAD_LENGTH + j*GRID_LENGTH, PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
 
     for i in range(row_num + 1):
-        pygame.draw.line(screen, (255, 255, 255), (0, i * GRID_LENGTH), (GRID_LENGTH * col_num, i * GRID_LENGTH), 1)
+        pygame.draw.line(screen, (255, 255, 255), (PAD_LENGTH + 0, PAD_LENGTH +i * GRID_LENGTH), 
+                        (PAD_LENGTH +GRID_LENGTH * col_num, PAD_LENGTH +i * GRID_LENGTH), 1)
     for i in range(col_num + 1):
-        pygame.draw.line(screen, (255, 255, 255), (i * GRID_LENGTH, 0), (i * GRID_LENGTH, row_num * GRID_LENGTH), 1)
+        pygame.draw.line(screen, (255, 255, 255), (PAD_LENGTH + i * GRID_LENGTH, PAD_LENGTH +0), 
+                        (PAD_LENGTH + i * GRID_LENGTH, PAD_LENGTH + row_num * GRID_LENGTH), 1)
 
     font = pygame.font.Font('freesansbold.ttf', 16)
     
@@ -177,14 +181,25 @@ def draw_input(screen, input, shape_list, cur_sel):
             j = point % col_num
             #print(point, i, j)
             if (idx == cur_sel):
-                pygame.draw.rect(screen, COLOR_SELECTED, (j*GRID_LENGTH, i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
-            screen.blit(text_surface, dest=((j + 0.5) * GRID_LENGTH, (i + 0.5) * GRID_LENGTH))
+                pygame.draw.rect(screen, COLOR_SELECTED, (PAD_LENGTH + j*GRID_LENGTH, PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
+            screen.blit(text_surface, dest=(PAD_LENGTH + (j + 0.5) * GRID_LENGTH, PAD_LENGTH + (i + 0.5) * GRID_LENGTH))
 
-    
+
+    if (attension == GameEngine.DIRECTION_TOP):
+        pygame.draw.circle(screen, COLOR_SELECTED, ((col_num * GRID_LENGTH + PAD_LENGTH * 2) // 2, PAD_LENGTH // 2), 15)
+    elif (attension == GameEngine.DIRECTION_BOTTOM):
+        pygame.draw.circle(screen, COLOR_SELECTED, ((col_num * GRID_LENGTH + PAD_LENGTH * 2) // 2, 
+                            PAD_LENGTH * 2 + row_num * GRID_LENGTH - PAD_LENGTH // 2 ), 15)
+    elif (attension == GameEngine.DIRECTION_LEFT):
+        pygame.draw.circle(screen, COLOR_SELECTED, (PAD_LENGTH // 2, (PAD_LENGTH * 2 + row_num * GRID_LENGTH) // 2), 15)
+    elif (attension == GameEngine.DIRECTION_RIGHT):
+        pygame.draw.circle(screen, COLOR_SELECTED, (col_num * GRID_LENGTH + PAD_LENGTH * 2 - PAD_LENGTH // 2, 
+                            (PAD_LENGTH * 2 + row_num * GRID_LENGTH) // 2), 15)
+
 
 def game_init(row_num, col_num):
     pygame.init()
-    screen = pygame.display.set_mode([col_num * GRID_LENGTH, row_num * GRID_LENGTH])
+    screen = pygame.display.set_mode([col_num * GRID_LENGTH + PAD_LENGTH * 2, row_num * GRID_LENGTH + PAD_LENGTH * 2])
     return screen
 
 
@@ -224,7 +239,7 @@ while running:
                 game_engine.do_action(GameEngine.ACTION_SEL_5)
 
     screen.fill(COLOR_PALETTE[0])
-    draw_input(screen, puzzle_input, game_engine.shape_list, game_engine.cur_sel)
+    draw_input(screen, puzzle_input, game_engine.shape_list, game_engine.cur_sel, game_engine.cur_attension)
     pygame.display.flip()
 
 pygame.quit()
