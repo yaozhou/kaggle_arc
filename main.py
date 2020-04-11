@@ -150,7 +150,7 @@ class GameEngine:
         elif (action == GameEngine.ACTION_ATTENSION_RIGHT):
             self.select_direct_attension(self.DIRECTION_RIGHT)
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
-            self.move_until_colission()
+            self.move_until_collision()
 
 
 
@@ -237,6 +237,14 @@ while running:
                 game_engine.do_action(GameEngine.ACTION_SEL_4)
             elif event.key == pygame.K_5:
                 game_engine.do_action(GameEngine.ACTION_SEL_5)
+            elif event.key == pygame.K_UP:
+                game_engine.do_action(GameEngine.ACTION_ATTENSION_TOP)
+            elif event.key == pygame.K_DOWN:
+                game_engine.do_action(GameEngine.ACTION_ATTENSION_BOTTOM)
+            elif event.key == pygame.K_LEFT:
+                game_engine.do_action(GameEngine.ACTION_ATTENSION_LEFT)
+            elif event.key == pygame.K_RIGHT:
+                game_engine.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
 
     screen.fill(COLOR_PALETTE[0])
     draw_input(screen, puzzle_input, game_engine.shape_list, game_engine.cur_sel, game_engine.cur_attension)
