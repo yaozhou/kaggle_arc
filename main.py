@@ -116,14 +116,46 @@ class GameEngine:
         for idx, shape in enumerate(self.shape_list):
             self.shape_list[idx] = np.array(list(shape))
 
-    def update_state_from_shape():
-        pass
+    def update_state_from_shape(self):
+        self.state = np.zeros(self.width * self.height)
+
+        # for shape in shape_list:
+        #     for point in shape:
+        #         self.state[]
+
 
     def select_shape(self, idx):
         self.cur_sel = idx
 
     def select_direct_attension(self, direction):
         self.cur_attension = direction
+
+    def get_shape_idx(self, point):
+        pass
+
+    def move_down_until_collision(self):
+        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+
+        shape = self.shape_list[self.cur_sel]
+
+        while True:
+            delta = 0
+            for point in shape:
+                next_pos_in_direction = (i + delta + 1) * self.width + j
+
+                i = next_pos_in_direction // self.width
+                j = next_pos_in_direction % self.width
+                if (i > self.height - 1): break
+
+                idx = self.get_shape_idx(next_pos_in_direction)
+                if (idx > 0 and idx != self.cur_sel): break
+
+                delta += 1
+
+        if (delta == 0): return
+
+        for idx, point in shape:
+            shape[idx] += delta * self.width
 
     def move_until_collision(self):
         pass
