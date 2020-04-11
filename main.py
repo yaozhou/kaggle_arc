@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 
-INPUT_FILE = '/Users/yao/develop/ARC/data/training/fafffa47.json'
+INPUT_FILE = '/Users/yao/develop/ARC/data/training/de1cd16c.json'
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -20,7 +20,7 @@ COLOR_PALETTE = [
     pygame.Color(135, 12, 37)
 ]
 
-GRID_LENGTH = 100
+GRID_LENGTH = 30
 COLOR_EMPTY = COLOR_PALETTE[0]
 
 class Shape:
@@ -49,8 +49,8 @@ class GameEngine:
 
     def __init__(self, input):
         self.state = np.array(input).flatten()
-        self.width = len(input)
-        self.height = len(input[0])
+        self.width = len(input[0])
+        self.height = len(input)
         self.shape_list = np.array([])
         self.G = nx.Graph()
 
@@ -70,6 +70,7 @@ class GameEngine:
                 up_right = up + 1
                 down_left = down - 1
                 down_right = down + 1
+                
 
                 if (i == 0): up = up_left = up_right = -1
                 if (i == self.height - 1): down = down_left = down_right = -1
@@ -77,10 +78,10 @@ class GameEngine:
                 if (j == self.width - 1): right = up_right = down_right = -1
 
                 
-                #print(idx)
+
                 self.G.add_node(idx)
                 
-                #print(up, up_left, up_right, down, down_left, down_right, left, right)
+                #print(self.width, self.height, idx, up, up_left, up_right, down, down_left, down_right, left, right)
 
                 if (up >= 0 and color == self.state[up]):
                     self.G.add_edge(idx, up)
@@ -105,14 +106,14 @@ class GameEngine:
                 if (right >= 0 and color == self.state[right]):
                     self.G.add_edge(idx, right)
 
-        #print(self.G.nodes())
+        #print(self.G.edges())
         self.shape_list = np.array(list(nx.connected_components(self.G)))
         #print(self.shape_list[0])
 
         for idx, shape in enumerate(self.shape_list):
             self.shape_list[idx] = np.array(list(shape))
         
-        print(self.shape_list)
+        #print(self.shape_list)
 
         # for s in list(nx.connected_components(self.G)):
         #     self.shape_list = np.append(self.shape_list,  list(s))
@@ -200,7 +201,7 @@ with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
 
 puzzle_input = puzzle['train'][0]['input']
-print(puzzle_input)
+#print(puzzle_input)
 row_num = len(puzzle_input)
 col_num = len(puzzle_input[0])
 
@@ -209,7 +210,7 @@ screen = game_init(row_num, col_num)
 game_engine = GameEngine(puzzle_input)
 game_engine.update_shape_list_from_state()
 #pdb.set_trace()
-print(game_engine.shape_list)
+#print(game_engine.shape_list)
 
 running = True
 while running:
