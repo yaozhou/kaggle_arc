@@ -3,7 +3,9 @@ import json
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+import pdb
 
+INPUT_FILE = '/Users/yao/develop/ARC/data/training/fafffa47.json'
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -26,6 +28,7 @@ class Shape:
         self.point_list = point_list
         self.width = width
         self.height = height
+        self.shape_list = np.array([1,2])
 
 class GameEngine: 
     ACTION_SEL_0 = 1
@@ -48,6 +51,7 @@ class GameEngine:
         self.state = np.array(input).flatten()
         self.width = len(input)
         self.height = len(input[0])
+        self.shape_list = np.array([])
         self.G = nx.Graph()
 
 
@@ -73,10 +77,10 @@ class GameEngine:
                 if (j == self.width - 1): right = up_right = down_right = -1
 
                 
-                print(idx)
+                #print(idx)
                 self.G.add_node(idx)
                 
-                print(up, up_left, up_right, down, down_left, down_right, left, right)
+                #print(up, up_left, up_right, down, down_left, down_right, left, right)
 
                 if (up >= 0 and color == self.state[up]):
                     self.G.add_edge(idx, up)
@@ -101,13 +105,24 @@ class GameEngine:
                 if (right >= 0 and color == self.state[right]):
                     self.G.add_edge(idx, right)
 
-        print(self.G.nodes())
-        nx.draw(self.G)
-        plt.show()            
+        #print(self.G.nodes())
+        self.shape_list = np.array(list(nx.connected_components(self.G)))
+        #print(self.shape_list[0])
+
+        for idx, shape in enumerate(self.shape_list):
+            self.shape_list[idx] = np.array(list(shape))
+        
+        print(self.shape_list)
+
+        # for s in list(nx.connected_components(self.G)):
+        #     self.shape_list = np.append(self.shape_list,  list(s))
+        #print(self.shape_list)
+        # nx.draw(self.G)
+        # plt.show()            
 
 
 
-        self.shape_list = None
+        #self.shape_list = None
 
     def update_state_from_shape():
         pass
@@ -148,7 +163,7 @@ class GameEngine:
 
 
 
-def draw_input(screen, input):
+def draw_input(screen, input, shape_list):
     row_num = len(input)
     col_num = len(input[0])
 
@@ -157,16 +172,35 @@ def draw_input(screen, input):
             color = COLOR_PALETTE[input[i][j]]
             pygame.draw.rect(screen, color, pygame.Rect(j*GRID_LENGTH, i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
 
+    for i in range(row_num + 1):
+        pygame.draw.line(screen, (255, 255, 255), (0, i * GRID_LENGTH), (GRID_LENGTH * col_num, i * GRID_LENGTH), 1)
+    for i in range(col_num + 1):
+        pygame.draw.line(screen, (255, 255, 255), (i * GRID_LENGTH, 0), (i * GRID_LENGTH, row_num * GRID_LENGTH), 1)
+
+    font = pygame.font.Font('freesansbold.ttf', 16)
+    
+
+    for idx, shape in enumerate(shape_list):
+        for point in shape:
+            text_surface = font.render(str(idx), True, (125,125,125))
+            i = point // col_num
+            j = point % col_num
+            #print(point, i, j)
+            screen.blit(text_surface, dest=((j + 0.5) * GRID_LENGTH, (i + 0.5) * GRID_LENGTH))
+
+    
+
 def game_init(row_num, col_num):
     pygame.init()
-    screen = pygame.display.set_mode([row_num * GRID_LENGTH, col_num * GRID_LENGTH])
+    screen = pygame.display.set_mode([col_num * GRID_LENGTH, row_num * GRID_LENGTH])
     return screen
 
 
-with open("./1e0a9b12.json",'r') as f:
+with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
 
-puzzle_input = puzzle['train'][1]['input']
+puzzle_input = puzzle['train'][0]['input']
+print(puzzle_input)
 row_num = len(puzzle_input)
 col_num = len(puzzle_input[0])
 
@@ -174,6 +208,8 @@ screen = game_init(row_num, col_num)
 
 game_engine = GameEngine(puzzle_input)
 game_engine.update_shape_list_from_state()
+#pdb.set_trace()
+print(game_engine.shape_list)
 
 running = True
 while running:
@@ -182,7 +218,7 @@ while running:
             running = False
 
     screen.fill(COLOR_PALETTE[0])
-    draw_input(screen, puzzle_input)
+    draw_input(screen, puzzle_input, game_engine.shape_list)
     pygame.display.flip()
 
 pygame.quit()
