@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 
-INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
+
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -65,12 +65,13 @@ class GameEngine:
     DIRECTION_LEFT = -2
     DIRECTION_RIGHT = -3
 
-    def __init__(self, input):
+    def __init__(self, input, output):
         self.width = len(input[0])
         self.height = len(input)
         self.shape_list = []
         self.cur_sel = 0
         self.cur_attension = self.DIRECTION_TOP
+        self.action_n = self.ACTION_MOVE_UNTIL_COLISSION
 
         self.init_shape_list_from_input(input)
 
@@ -81,7 +82,7 @@ class GameEngine:
 
     def init_shape_list_from_input(self, input):
         input = np.array(input).flatten()
-        print(input)
+        #print(input)
         G = nx.Graph()
 
         for i in range(self.height):
@@ -104,7 +105,7 @@ class GameEngine:
                 if (j == 0): left = up_left = down_left = -1
                 if (j == self.width - 1): right = up_right = down_right = -1
 
-                print(up, down, left, right, up_left, up_right, down_left, down_right)
+                #print(up, down, left, right, up_left, up_right, down_left, down_right)
 
                 G.add_node(idx)
 
@@ -246,6 +247,9 @@ class GameEngine:
             self.move_until_collision()
 
     def draw_game(self):
+        # walkaround to fix rl main loop problem
+        pygame.event.get()
+
         self.screen.fill(COLOR_PALETTE[0])
 
         # draw lines
@@ -314,19 +318,22 @@ class GameEngine:
             self.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
 
 
-with open(INPUT_FILE,'r') as f:
-    puzzle = json.load(f)
-puzzle_input = puzzle['train'][2]['input']
-game_engine = GameEngine(puzzle_input)
+if __name__ == "__main__":
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
+    with open(INPUT_FILE,'r') as f:
+        puzzle = json.load(f)
+    puzzle_input = puzzle['train'][0]['input']
+    puzzle_output = puzzle['train'][0]['output']
+    game_engine = GameEngine(puzzle_input, puzzle_output)
 
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            game_engine.process_key(event)
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                game_engine.process_key(event)
 
-    game_engine.draw_game()
+        game_engine.draw_game()
 
-pygame.quit()
+    pygame.quit()
