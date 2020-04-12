@@ -45,7 +45,7 @@ class Shape:
         self.idx = idx
         self.game_engine = game_engine
 
-class GameEngine: 
+class GameEngine:
     ACTION_SEL_0 = 0
     ACTION_SEL_1 = 1
     ACTION_SEL_2 = 2
@@ -63,6 +63,7 @@ class GameEngine:
     DIRECTION_RIGHT = -3
 
     def __init__(self, input, output):
+        
         self.width = len(input[0])
         self.height = len(input)
         self.shape_list = []
@@ -70,12 +71,35 @@ class GameEngine:
         self.cur_attension = self.DIRECTION_TOP
         self.action_n = self.ACTION_MOVE_UNTIL_COLISSION
 
+        self.input = np.array(input).flatten()
+        self.answer = np.array(output).flatten()
+        self.cur_score = self.calc_state_score(self.input, self.answer)
+        print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
+
         self.init_shape_list_from_input(input)
 
         pygame.init()
         self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
                 self.height * GRID_LENGTH + PAD_LENGTH * 2])
 
+    def calc_state_score(self, state, answer):
+        #print(state)
+        return np.sum(state == answer)
+
+    def shape_list_2_state(self):
+        state = np.zeros(self.width * self.height, dtype=np.int64)
+        #pdb.set_trace()
+        for shape in self.shape_list:
+            for grid in shape.grid_list:
+                state[grid.idx] = grid.color
+
+        return np.array(state)
+    
+    def calc_current_score(self):
+        cur_state = self.shape_list_2_state()
+        #print(cur_state)
+        score = self.calc_state_score(cur_state, self.answer)
+        return score
 
     def init_shape_list_from_input(self, input):
         input = np.array(input).flatten()
@@ -137,7 +161,7 @@ class GameEngine:
             for grid_idx in list(component):
                 i = grid_idx // self.width
                 j = grid_idx % self.width
-                grid = Grid(j, i, idx, input[grid_idx], shape)
+                grid = Grid(j, i, grid_idx, input[grid_idx], shape)
                 shape.grid_list.append(grid)
 
             self.shape_list.append(shape)
@@ -240,6 +264,9 @@ class GameEngine:
             self.select_direct_attension(self.DIRECTION_RIGHT)
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
             self.move_until_collision()
+
+        self.cur_score = self.calc_current_score()
+        print('current socre : %d' % self.cur_score)
 
     def draw_game(self):
         # walkaround to fix rl main loop problem
