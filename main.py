@@ -34,9 +34,13 @@ class Grid:
         self.color = color
         self.game_engine = game_engine
 
-    def move_down(self):
-        self.y += 1
-        self.idx += game_engine.width
+    def move_vert(self, delta):
+        self.y += delta
+        self.idx += game_engine.width * delta
+
+    def move_hori(self, delta):
+        self.x += delta
+        self.idx += delta
 
 class Shape:
     def __init__(self, point_list, width, height):
@@ -133,15 +137,15 @@ class GameEngine:
                 i = point // self.width
                 j = point % self.width
                 #pdb.set_trace()
-                grid_list.append(Grid(i, j, point, shape_idx, self.state[point], self))
+                grid_list.append(Grid(j, i, point, shape_idx, self.state[point], self))
             self.shape_list[shape_idx] = np.array(grid_list)
 
     def update_state_from_shape(self):
         self.state = np.zeros(self.width * self.height, dtype=np.int64)
 
+        
         for shape in self.shape_list:
             for grid in shape:
-                #print(grid.color)
                 self.state[grid.idx] = grid.color
 
 
@@ -159,6 +163,64 @@ class GameEngine:
         
         return -1
 
+    def get_shape_idx_from_xy(self, x, y):
+        for shape in self.shape_list:
+            for grid in shape:
+                if (grid.x == x and grid.y == y):
+                    return grid.shape_idx
+
+        return -1
+
+    def move_vert_until_collision(self, down):
+        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+
+        shape = self.shape_list[self.cur_sel]
+        stop = False
+        delta = 0
+
+        while True:
+            for grid in shape:
+                y = grid.y + delta + (1 if down else -1)
+                if (y > self.height - 1 or y < 0):
+                    stop = True
+                    break
+
+                shape_idx = self.get_shape_idx_from_xy(grid.x, y)
+                if (shape_idx >= 0 and shape_idx != self.cur_sel):
+                    stop = True
+                    break
+            if (stop): break
+            delta += (1 if down else -1)
+
+        for grid in shape:
+            grid.move_vert(delta)
+
+    def move_hori_until_collision(self, right):
+        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+
+        shape = self.shape_list[self.cur_sel]
+        stop = False
+        delta = 0
+
+        while True:
+            for grid in shape:
+                x = grid.x + delta + (1 if right else -1)
+                if (x > self.width - 1 or x < 0):
+                    stop = True
+                    break
+
+                shape_idx = self.get_shape_idx_from_xy(x, grid.y)
+                if (shape_idx >= 0 and shape_idx != self.cur_sel):
+                    stop = True
+                    break
+
+            if (stop): break
+            delta += (1 if right else -1)
+
+        for grid in shape:
+            grid.move_hori(delta)
+        
+
     def move_down_until_collision(self):
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
 
@@ -167,11 +229,14 @@ class GameEngine:
         stop = False
         delta = 0
 
+        #pdb.set_trace()
+
         while True:
-            print(delta)
+            #print(delta)
             for point in shape:
-                i = point.x + delta + 1
-                j = point.y
+                #print(point.x, point.y)
+                i = point.y + delta + 1
+                j = point.x
                 if (i > self.height - 1): 
                     stop = True
                     break
@@ -183,7 +248,7 @@ class GameEngine:
                 
 
                 idx = self.get_shape_idx(next_pos_in_direction)
-                if (idx > 0 and idx != self.cur_sel): 
+                if (idx >= 0 and idx != self.cur_sel):
                     stop = True
                     break
 
@@ -196,14 +261,23 @@ class GameEngine:
 
         #pdb.set_trace()
         for grid in shape:
-            grid.move_down()
+            grid.move_down(delta)
+
+        for grid in shape:
+            print(grid.x, grid.y)
 
 
     def move_until_collision(self):
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
 
         if (self.cur_attension == self.DIRECTION_BOTTOM):
-            self.move_down_until_collision()
+            self.move_vert_until_collision(True)
+        elif (self.cur_attension == self.DIRECTION_TOP):
+            self.move_vert_until_collision(False)
+        elif (self.cur_attension == self.DIRECTION_RIGHT):
+            self.move_hori_until_collision(True)
+        elif (self.cur_attension == self.DIRECTION_LEFT):
+            self.move_hori_until_collision(False)
 
     def do_action(self, action):
         if (action == GameEngine.ACTION_SEL_0):
@@ -258,8 +332,8 @@ def draw_input(screen, game_engine):
     for idx, shape in enumerate(game_engine.shape_list):
         for point in shape:
             text_surface = font.render(str(idx), True, (125,125,125))
-            i = point.x
-            j = point.y
+            j = point.x
+            i = point.y
             #print(point, i, j)
             if (idx == game_engine.cur_sel):
                 pygame.draw.rect(screen, COLOR_SELECTED, (PAD_LENGTH + j*GRID_LENGTH, PAD_LENGTH + i*GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
