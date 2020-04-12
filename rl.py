@@ -24,10 +24,14 @@ env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output)
 
 keyboard.hook(keyboard_hook)
 
+obs = env.reset()
+print(obs)
+
 while True:
     env.render()
     if (action != None):
         print('action : ' + str(action))
-        env.step(action)
+        obs = env.step(action)
+        print(obs)
         action = None
     time.sleep(0.1)

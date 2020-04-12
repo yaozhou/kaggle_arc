@@ -20,6 +20,8 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 PAD_LENGTH = 50
+MAX_SHAPLE_NUM = 4
+MAX_FEATURE_NUM = 10
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 
@@ -66,21 +68,69 @@ class GameEngine:
         
         self.width = len(input[0])
         self.height = len(input)
-        self.shape_list = []
-        self.cur_sel = 0
-        self.cur_attension = self.DIRECTION_TOP
         self.action_n = self.ACTION_MOVE_UNTIL_COLISSION
-
         self.input = np.array(input).flatten()
         self.answer = np.array(output).flatten()
-        self.cur_score = self.calc_state_score(self.input, self.answer)
-        print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
-
-        self.init_shape_list_from_input(input)
-
         pygame.init()
         self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
                 self.height * GRID_LENGTH + PAD_LENGTH * 2])
+        
+        self.reset()
+
+    def reset(self):
+        self.shape_list = []
+        self.cur_sel = 0
+        self.cur_attension = self.DIRECTION_TOP
+        self.cur_score = self.calc_state_score(self.input, self.answer)
+        print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
+
+        self.init_shape_list_from_input(self.input)
+        self.features = self.shape_list_2_feature()
+
+    def shape_2_feature(self, shape):
+        feature = np.zeros(MAX_FEATURE_NUM)
+
+        left = right = top = bottom = -1
+
+        for grid in shape.grid_list:
+            if (left == -1 or grid.x < left):
+                left = grid.x
+            
+            if (right == -1 or grid.x > right):
+                right = grid.x
+
+            if (top == -1 or grid.y < top):
+                top = grid.y
+
+            if (bottom == -1 or grid.y > bottom):
+                bottom = grid.y
+
+        width = right - left + 1
+        height = bottom - top + 1
+        ratio = width / height
+
+        #print(left, right, top, bottom)
+
+        feature[0] = shape.grid_list[0].color
+        feature[1] = len(shape.grid_list)
+        feature[2] = left
+        feature[3] = right
+        feature[4] = top
+        feature[5] = bottom
+        feature[6] = width
+        feature[7] = height
+        feature[8] = ratio
+
+        return feature
+
+
+    def shape_list_2_feature(self):
+        features = np.zeros((MAX_SHAPLE_NUM, MAX_FEATURE_NUM))
+
+        for idx, shape in enumerate(self.shape_list):
+            features[idx] = self.shape_2_feature(shape)
+
+        return features
 
     def calc_state_score(self, state, answer):
         #print(state)
@@ -270,6 +320,10 @@ class GameEngine:
         self.cur_score = new_score
 
         print('current socre : %d progress : %d' % (self.cur_score, progress))
+
+        self.features = self.shape_list_2_feature()
+
+        return self.features
 
     def draw_game(self):
         # walkaround to fix rl main loop problem

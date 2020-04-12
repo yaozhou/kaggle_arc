@@ -19,9 +19,11 @@ class ARCEnv(gym.Env):
     def step(self, action):
         # print('action : ' + str(action))
         self.engine.do_action(action)
+        return self.engine.features
  
     def reset(self):
-        pass
+        self.engine.reset()
+        return self.engine.features
  
     def render(self, mode='human', close=False):
         # print('render')
