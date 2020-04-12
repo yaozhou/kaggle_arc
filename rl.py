@@ -3,6 +3,16 @@ import gym_arc
 import pdb
 import json
 import time
+import keyboard
+
+action = None
+
+def keyboard_hook(x):
+    global action
+    if (x.event_type != 'down' or x.name < '0' or x.name > '9'): return
+
+    print(x)
+    action = int(x.name)
 
 INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
 with open(INPUT_FILE,'r') as f:
@@ -12,9 +22,12 @@ puzzle_output = puzzle['train'][0]['output']
 
 env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output)
 
-#pdb.set_trace()
+keyboard.hook(keyboard_hook)
 
 while True:
     env.render()
-    env.step(3)
+    if (action != None):
+        print('action : ' + str(action))
+        env.step(action)
+        action = None
     time.sleep(0.1)

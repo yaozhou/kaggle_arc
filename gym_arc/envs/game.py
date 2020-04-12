@@ -5,8 +5,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 
-
-
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
     pygame.Color(0, 116, 217),
@@ -48,17 +46,16 @@ class Shape:
         self.game_engine = game_engine
 
 class GameEngine: 
-    ACTION_SEL_0 = 1
-    ACTION_SEL_1 = 2
-    ACTION_SEL_2 = 3
-    ACTION_SEL_3 = 4
-    ACTION_SEL_4 = 5
-    ACTION_SEL_5 = 6
-    ACTION_ATTENSION_TOP = 7
-    ACTION_ATTENSION_BOTTOM = 8
-    ACTION_ATTENSION_LEFT = 9
-    ACTION_ATTENSION_RIGHT = 10
-    ACTION_MOVE_UNTIL_COLISSION = 11
+    ACTION_SEL_0 = 0
+    ACTION_SEL_1 = 1
+    ACTION_SEL_2 = 2
+    ACTION_SEL_3 = 3
+    ACTION_SEL_4 = 4
+    ACTION_ATTENSION_TOP = 5
+    ACTION_ATTENSION_BOTTOM = 6
+    ACTION_ATTENSION_LEFT = 7
+    ACTION_ATTENSION_RIGHT = 8
+    ACTION_MOVE_UNTIL_COLISSION = 9
 
     DIRECTION_TOP = 0
     DIRECTION_BOTTOM = -1
@@ -233,8 +230,6 @@ class GameEngine:
             self.select_shape(3)
         elif (action == GameEngine.ACTION_SEL_4):
             self.select_shape(4)
-        elif (action == GameEngine.ACTION_SEL_5):
-            self.select_shape(5)
         elif (action == GameEngine.ACTION_ATTENSION_TOP):
             self.select_direct_attension(self.DIRECTION_TOP)
         elif (action == GameEngine.ACTION_ATTENSION_BOTTOM):
@@ -304,8 +299,6 @@ class GameEngine:
             self.do_action(GameEngine.ACTION_SEL_3)
         elif event.key == pygame.K_4:
             self.do_action(GameEngine.ACTION_SEL_4)
-        elif event.key == pygame.K_5:
-            self.do_action(GameEngine.ACTION_SEL_5)
         elif event.key == pygame.K_UP:
             self.do_action(GameEngine.ACTION_ATTENSION_TOP)
         elif event.key == pygame.K_DOWN:
