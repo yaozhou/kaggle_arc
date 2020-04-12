@@ -265,8 +265,11 @@ class GameEngine:
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
             self.move_until_collision()
 
-        self.cur_score = self.calc_current_score()
-        print('current socre : %d' % self.cur_score)
+        new_score= self.calc_current_score()
+        progress = new_score - self.cur_score
+        self.cur_score = new_score
+
+        print('current socre : %d progress : %d' % (self.cur_score, progress))
 
     def draw_game(self):
         # walkaround to fix rl main loop problem
