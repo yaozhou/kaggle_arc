@@ -18,8 +18,8 @@ class ARCEnv(gym.Env):
  
     def step(self, action):
         # print('action : ' + str(action))
-        self.engine.do_action(action)
-        return self.engine.features
+        obs, reward, done, info = self.engine.do_action(action)
+        return obs, reward, done, info
  
     def reset(self):
         self.engine.reset()

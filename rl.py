@@ -31,7 +31,9 @@ while True:
     env.render()
     if (action != None):
         print('action : ' + str(action))
-        obs = env.step(action)
+        obs, reward, done, info = env.step(action)
         print(obs)
+        print(reward)
+        print(done)
         action = None
     time.sleep(0.1)

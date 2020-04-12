@@ -71,6 +71,7 @@ class GameEngine:
         self.action_n = self.ACTION_MOVE_UNTIL_COLISSION
         self.input = np.array(input).flatten()
         self.answer = np.array(output).flatten()
+        self.finish_score = self.width * self.height
         pygame.init()
         self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
                 self.height * GRID_LENGTH + PAD_LENGTH * 2])
@@ -315,7 +316,11 @@ class GameEngine:
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
             self.move_until_collision()
 
+        done = False
+
         new_score= self.calc_current_score()
+        if (new_score == self.finish_score):
+            done = True
         progress = new_score - self.cur_score
         self.cur_score = new_score
 
@@ -323,7 +328,7 @@ class GameEngine:
 
         self.features = self.shape_list_2_feature()
 
-        return self.features
+        return self.features, progress, done, None
 
     def draw_game(self):
         # walkaround to fix rl main loop problem
