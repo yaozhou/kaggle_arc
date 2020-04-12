@@ -316,7 +316,7 @@ class GameEngine:
 
 with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
-puzzle_input = puzzle['train'][0]['input']
+puzzle_input = puzzle['train'][2]['input']
 game_engine = GameEngine(puzzle_input)
 
 running = True
