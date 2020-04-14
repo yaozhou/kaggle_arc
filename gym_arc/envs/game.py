@@ -68,7 +68,7 @@ class GameEngine:
         
         self.width = len(input[0])
         self.height = len(input)
-        self.action_n = self.ACTION_MOVE_UNTIL_COLISSION
+        self.action_n = self.ACTION_MOVE_UNTIL_COLISSION + 1
         self.input = np.array(input).flatten()
         self.answer = np.array(output).flatten()
         self.finish_score = self.width * self.height
@@ -325,7 +325,7 @@ class GameEngine:
         progress = new_score - self.cur_score
         self.cur_score = new_score
 
-        print('current socre : %d progress : %d' % (self.cur_score, progress))
+        #print('current socre : %d progress : %d' % (self.cur_score, progress))
 
         self.features = self.shape_list_2_feature()
 

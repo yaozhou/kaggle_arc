@@ -74,7 +74,7 @@ class DQN(object):
         #pdb.set_trace()
         x = x.flatten()
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
-        if np.random.uniform() < EPSILON:
+        if np.random.uniform() < 0.9:
             actions_value = self.eval_net.forward(x)
             action = torch.max(actions_value, 1)[1].data.numpy()[0]
         else:
@@ -107,6 +107,8 @@ class DQN(object):
         q_next = self.target_net(torch.FloatTensor(s1_batch)).detach()
         q_target = torch.FloatTensor(r_batch) + GAMMA * q_next.max(1)[0]
         loss = self.loss_func(q_eval.squeeze(1), q_target)
+        #pdb.set_trace()
+        #print('loss: %f' % loss)
 
         # 计算, 更新 eval net
         self.optimizer.zero_grad()
@@ -121,7 +123,7 @@ def keyboard_hook(x):
     global action
     if (x.event_type != 'down' or x.name < '0' or x.name > '9'): return
 
-    print(x)
+    #print(x)
     action = int(x.name)
 
 INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
@@ -170,14 +172,16 @@ for i_episode in range(400):
         env.render()
         a = dqn.choose_action(s)
         #a = env.action_space.sample()
-        print('action %d' % a)
+        #print('action %d' % a)
 
         s1, r, done, info = env.step(a)
+        if (r > 0):
+            print('reward %f' % r)
 
         dqn.store_transition(s, a, r, s1, done)
 
         if (len(dqn.memory) == MEMORY_CAPACITY):
-            print('learning')
+            #print('learning')
             dqn.learn()
 
         if done:
