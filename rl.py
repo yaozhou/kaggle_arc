@@ -122,6 +122,8 @@ for i_episode in range(400):
     s = env.reset()
     steps = 0
     while True:
+        steps += 1
+        print(steps)
         if (steps > 5120):
             print('episode %d failed step(%d)' % (i_episode, steps))
             break
