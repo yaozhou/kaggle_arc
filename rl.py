@@ -12,6 +12,10 @@ import torch.nn.functional as F
 from collections import deque
 import random
 
+# walkaroud 
+import sys
+sys.path.append('./gym_arc/envs')
+
 EPSILON = 0.9
 TARGET_REPLACE_ITER = 100
 MEMORY_CAPACITY = 2560
