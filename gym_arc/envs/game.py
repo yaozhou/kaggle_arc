@@ -64,7 +64,7 @@ class GameEngine:
     DIRECTION_LEFT = -2
     DIRECTION_RIGHT = -3
 
-    def __init__(self, input, output):
+    def __init__(self, input, output, need_ui):
         
         self.width = len(input[0])
         self.height = len(input)
@@ -72,11 +72,13 @@ class GameEngine:
         self.input = np.array(input).flatten()
         self.answer = np.array(output).flatten()
         self.finish_score = self.width * self.height
-        pygame.init()
-        self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
-                self.height * GRID_LENGTH + PAD_LENGTH * 2])
+        self.need_ui = need_ui
+        if (need_ui):
+            pygame.init()
+            self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
+                    self.height * GRID_LENGTH + PAD_LENGTH * 2])
         
-        self.reset()
+        #self.reset()
 
     def reset(self):
         self.shape_list = []
@@ -332,6 +334,7 @@ class GameEngine:
         return self.features, progress, done, None
 
     def draw_game(self):
+        if (not self.need_ui): return
         # walkaround to fix rl main loop problem
         pygame.event.get()
 
@@ -407,7 +410,7 @@ if __name__ == "__main__":
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
     puzzle_output = puzzle['train'][0]['output']
-    game_engine = GameEngine(puzzle_input, puzzle_output)
+    game_engine = GameEngine(puzzle_input, puzzle_output, True)
 
     running = True
     while running:

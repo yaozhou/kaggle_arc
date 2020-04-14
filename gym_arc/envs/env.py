@@ -10,7 +10,8 @@ class ARCEnv(gym.Env):
         #print(kwargs)
         input = kwargs['input']
         output = kwargs['output'] 
-        self.engine = game.GameEngine(input, output)
+        need_ui = kwargs['need_ui']
+        self.engine = game.GameEngine(input, output, need_ui)
         self.action_space = spaces.Discrete(self.engine.action_n)
         self.observation_space = spaces.Box(low=0, high=255,
                                         shape=(game.MAX_SHAPLE_NUM, game.MAX_FEATURE_NUM, 1), 

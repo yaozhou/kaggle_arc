@@ -14,7 +14,7 @@ import random
 
 EPSILON = 0.9
 TARGET_REPLACE_ITER = 100
-MEMORY_CAPACITY = 128
+MEMORY_CAPACITY = 2560
 BATCH_SIZE = 32
 LR = 0.01
 GAMMA = 0.999
@@ -106,18 +106,22 @@ with open(INPUT_FILE,'r') as f:
 puzzle_input = puzzle['train'][0]['input']
 puzzle_output = puzzle['train'][0]['output']
 
-env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output)
+env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=False)
 print(env.observation_space.shape)
 print(env.action_space.n)
-keyboard.hook(keyboard_hook)
+#keyboard.hook(keyboard_hook)
 
 dqn = DQN(env.observation_space.shape, env.action_space.n)
-s = env.reset()
+#s = env.reset()
 
 for i_episode in range(400):
     s = env.reset()
+    steps = 0
     while True:
-        env.render()
+        if (steps > 5120):
+            break
+
+        #env.render()
         a = dqn.choose_action(s)
         #a = env.action_space.sample()
 
@@ -128,12 +132,10 @@ for i_episode in range(400):
         dqn.store_transition(s, a, r, s1, done)
 
         if (len(dqn.memory) == MEMORY_CAPACITY):
-            #print('learning')
             dqn.learn()
 
         if done:
             print('episode success!')
             break
 
-        if done:
-            break
+torch.save(dqn.target_net, './result/arc.model')
