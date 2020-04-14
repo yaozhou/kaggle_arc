@@ -100,7 +100,7 @@ def keyboard_hook(x):
 
     action = int(x.name)
 
-INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
+INPUT_FILE = './data/05f2a901.json'
 with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
 puzzle_input = puzzle['train'][0]['input']
