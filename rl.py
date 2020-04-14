@@ -107,8 +107,8 @@ puzzle_input = puzzle['train'][0]['input']
 puzzle_output = puzzle['train'][0]['output']
 
 env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=False)
-print(env.observation_space.shape)
-print(env.action_space.n)
+#print(env.observation_space.shape)
+#print(env.action_space.n)
 #keyboard.hook(keyboard_hook)
 
 dqn = DQN(env.observation_space.shape, env.action_space.n)
@@ -119,6 +119,7 @@ for i_episode in range(400):
     steps = 0
     while True:
         if (steps > 5120):
+            print('episode %d failed step(%d)' % (i_episode, steps))
             break
 
         #env.render()
@@ -135,7 +136,7 @@ for i_episode in range(400):
             dqn.learn()
 
         if done:
-            print('episode success!')
+            print('episode %d success step(%d)!' % (i_episode, steps))
             break
 
 torch.save(dqn.target_net, './result/arc.model')
