@@ -13,8 +13,8 @@ class ARCEnv(gym.Env):
         self.engine = game.GameEngine(input, output)
         self.action_space = spaces.Discrete(self.engine.action_n)
         self.observation_space = spaces.Box(low=0, high=255,
-                                        shape=(self.engine.height, self.engine.width, 1), 
-                                        dtype=np.uint8)
+                                        shape=(game.MAX_SHAPLE_NUM, game.MAX_FEATURE_NUM, 1), 
+                                        dtype=np.float)
  
     def step(self, action):
         # print('action : ' + str(action))

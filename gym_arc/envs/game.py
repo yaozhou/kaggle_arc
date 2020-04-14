@@ -87,6 +87,7 @@ class GameEngine:
 
         self.init_shape_list_from_input(self.input)
         self.features = self.shape_list_2_feature()
+        return self.features
 
     def shape_2_feature(self, shape):
         feature = np.zeros(MAX_FEATURE_NUM)
