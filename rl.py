@@ -11,6 +11,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from collections import deque
 import random
+import tensorflow as tf
 
 # walkaroud 
 import sys
@@ -18,7 +19,7 @@ sys.path.append('./gym_arc/envs')
 
 EPSILON = 0.9
 TARGET_REPLACE_ITER = 100
-MEMORY_CAPACITY = 2560
+MEMORY_CAPACITY = 512
 BATCH_SIZE = 32
 LR = 0.01
 GAMMA = 0.999
@@ -28,6 +29,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         self.layer = nn.Sequential(
+            nn.ReLU(True),
             nn.Linear(width * height, 512),
             nn.ReLU(True),
             nn.Linear(512, 256),
@@ -58,7 +60,7 @@ class DQN(object):
     def choose_action(self, x):
         x = x.flatten()
         x = torch.unsqueeze(torch.FloatTensor(x), 0)
-        if np.random.uniform() < 0.9:
+        if np.random.uniform() < 0.95:
             actions_value = self.eval_net.forward(x)
             action = torch.max(actions_value, 1)[1].data.numpy()[0]
         else:
@@ -73,7 +75,7 @@ class DQN(object):
             self.memory.popleft()
 
     def learn(self):
-        if self.learn_step % TARGET_REPLACE_ITER == 0:
+        if self.learn_step % 32 == 0:
             self.target_net.load_state_dict(self.eval_net.state_dict())
         self.learn_step += 1
 
@@ -109,32 +111,57 @@ with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
 puzzle_input = puzzle['train'][0]['input']
 puzzle_output = puzzle['train'][0]['output']
+need_ui = False
 
-env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=False)
+env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=need_ui)
 #print(env.observation_space.shape)
 #print(env.action_space.n)
 #keyboard.hook(keyboard_hook)
 
+summary = tf.summary.create_file_writer('./log')
+summary.set_as_default()
+
 dqn = DQN(env.observation_space.shape, env.action_space.n)
 #s = env.reset()
 
-for i_episode in range(400):
+succ_count = 0
+fail_count = 0
+
+#pdb.set_trace()
+
+for i_episode in range(400000):
     s = env.reset()
     steps = 0
+
+    if (succ_count + fail_count == 0):
+        ratio = 0
+    else:
+        ratio = 100 * (succ_count / (succ_count + fail_count))
+    print('succ(%d) fail(%d) succ ratio: (%f)' % (succ_count, fail_count, ratio))
+    tf.summary.scalar('succ ratio', ratio, step=i_episode)
+
     while True:
         steps += 1
-        print(steps)
-        if (steps > 5120):
+
+        #print(steps)
+        if (steps > 2560):
+            fail_count += 1
             print('episode %d failed step(%d)' % (i_episode, steps))
+            tf.summary.scalar('fail', steps, step=i_episode)
             break
 
-        #env.render()
+        if (need_ui): env.render()
         a = dqn.choose_action(s)
         #a = env.action_space.sample()
 
         s1, r, done, info = env.step(a)
-        if (r > 0):
+        if (r != 0):
             print('reward %f' % r)
+        if (r < 0):
+            fail_count += 1
+            print('episode %d failed step(%d)' % (i_episode, steps))
+            tf.summary.scalar('fail', steps, step=i_episode)
+            break
 
         dqn.store_transition(s, a, r, s1, done)
 
@@ -142,7 +169,9 @@ for i_episode in range(400):
             dqn.learn()
 
         if done:
-            print('episode %d success step(%d)!' % (i_episode, steps))
+            succ_count += 1
+            print('episode %d success step(%d)------------------------!' % (i_episode, steps))
+            tf.summary.scalar('succ', steps, step=i_episode)
             break
 
 torch.save(dqn.target_net, './result/arc.model')

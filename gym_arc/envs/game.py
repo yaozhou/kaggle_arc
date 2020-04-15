@@ -20,7 +20,7 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 PAD_LENGTH = 50
-MAX_SHAPLE_NUM = 4
+MAX_SHAPLE_NUM = 8
 MAX_FEATURE_NUM = 10
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
@@ -85,7 +85,7 @@ class GameEngine:
         self.cur_sel = 0
         self.cur_attension = self.DIRECTION_TOP
         self.cur_score = self.calc_state_score(self.input, self.answer)
-        print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
+        #print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
 
         self.init_shape_list_from_input(self.input)
         self.features = self.shape_list_2_feature()
@@ -124,6 +124,7 @@ class GameEngine:
         feature[6] = width
         feature[7] = height
         feature[8] = ratio
+        feature[9] = self.cur_sel == shape.idx
 
         return feature
 
@@ -133,6 +134,15 @@ class GameEngine:
 
         for idx, shape in enumerate(self.shape_list):
             features[idx] = self.shape_2_feature(shape)
+
+        if (self.cur_attension == self.DIRECTION_TOP):
+            features[-1][0] = 1
+        elif (self.cur_attension == self.DIRECTION_BOTTOM):
+            features[-2][0] = 1
+        elif (self.cur_attension == self.DIRECTION_LEFT):
+            features[-3][0] = 1
+        elif (self.cur_attension == self.DIRECTION_RIGHT):
+            features[-4][0] = 1
 
         return features
 
