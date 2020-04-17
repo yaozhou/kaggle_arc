@@ -21,7 +21,7 @@ EPSILON = 0.9
 TARGET_REPLACE_ITER = 100
 MEMORY_CAPACITY = 512
 BATCH_SIZE = 32
-LR = 0.01
+LR = 0.001
 GAMMA = 0.999
 
 class Net(nn.Module):
@@ -30,11 +30,11 @@ class Net(nn.Module):
 
         self.layer = nn.Sequential(
             nn.ReLU(True),
-            nn.Linear(width * height, 512),
+            nn.Linear(width * height, 10),
             nn.ReLU(True),
-            nn.Linear(512, 256),
-            nn.ReLU(True),
-            nn.Linear(256, action_num)
+            # nn.Linear(512, 256),
+            # nn.ReLU(True),
+            nn.Linear(10, action_num)
         )
 
     def forward(self, x):
@@ -47,9 +47,9 @@ class DQN(object):
 
     def __init__(self, obs_shape, action_num):
         self.width = obs_shape[0]
-        self.height = obs_shape[1]
-        self.eval_net = Net(obs_shape[0], obs_shape[1], action_num)
-        self.target_net = Net(obs_shape[0], obs_shape[1], action_num)
+        self.height = 1
+        self.eval_net = Net(obs_shape[0], 1, action_num)
+        self.target_net = Net(obs_shape[0], 1, action_num)
         self.action_num = action_num
         
         self.learn_step = 0
@@ -111,11 +111,12 @@ with open(INPUT_FILE,'r') as f:
     puzzle = json.load(f)
 puzzle_input = puzzle['train'][0]['input']
 puzzle_output = puzzle['train'][0]['output']
-need_ui = False
+need_ui = True
 
 env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=need_ui)
-#print(env.observation_space.shape)
-#print(env.action_space.n)
+env = gym.make("CartPole-v1")
+print(env.observation_space.shape)
+print(env.action_space.n)
 #keyboard.hook(keyboard_hook)
 
 summary = tf.summary.create_file_writer('./log')
@@ -155,13 +156,13 @@ for i_episode in range(400000):
         #a = env.action_space.sample()
 
         s1, r, done, info = env.step(a)
-        if (r != 0):
-            print('reward %f' % r)
-        if (r < 0):
-            fail_count += 1
-            print('episode %d failed step(%d)' % (i_episode, steps))
-            tf.summary.scalar('fail', steps, step=i_episode)
-            break
+        # if (r != 0):
+        #     print('reward %f' % r)
+        # if (r < 0):
+        #     fail_count += 1
+        #     print('episode %d failed step(%d)' % (i_episode, steps))
+        #     tf.summary.scalar('fail', steps, step=i_episode)
+        #     break
 
         dqn.store_transition(s, a, r, s1, done)
 
@@ -170,7 +171,7 @@ for i_episode in range(400000):
 
         if done:
             succ_count += 1
-            print('episode %d success step(%d)------------------------!' % (i_episode, steps))
+            #print('episode %d success step(%d)------------------------!' % (i_episode, steps))
             tf.summary.scalar('succ', steps, step=i_episode)
             break
 

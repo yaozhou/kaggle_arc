@@ -83,7 +83,7 @@ class GameEngine:
     def reset(self):
         self.shape_list = []
         self.cur_sel = 0
-        self.cur_attension = self.DIRECTION_TOP
+        self.cur_attension = self.DIRECTION_BOTTOM
         self.cur_score = self.calc_state_score(self.input, self.answer)
         #print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
 
@@ -296,6 +296,7 @@ class GameEngine:
             grid.move_hori(delta)
 
     def move_until_collision(self):
+        #pdb.set_trace()
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
 
         if (self.cur_attension == self.DIRECTION_BOTTOM):
@@ -308,6 +309,7 @@ class GameEngine:
             self.move_hori_until_collision(False)
 
     def do_action(self, action):
+        #pdb.set_trace()
         if (action == GameEngine.ACTION_SEL_0):
             self.select_shape(0)
         elif (action == GameEngine.ACTION_SEL_1):
@@ -421,6 +423,7 @@ if __name__ == "__main__":
     puzzle_input = puzzle['train'][0]['input']
     puzzle_output = puzzle['train'][0]['output']
     game_engine = GameEngine(puzzle_input, puzzle_output, True)
+    game_engine.reset()
 
     running = True
     while running:
