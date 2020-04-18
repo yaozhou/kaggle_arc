@@ -2,7 +2,7 @@ import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
 import numpy as np
-import gym_arc.envs.game as game
+import game
 import json
 
 class MultiTaskARCEnv(gym.Env):
