@@ -9,6 +9,8 @@ import time
 import pdb
 from baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
 
+sys.path.append('../gym_arc/envs/')
+
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
