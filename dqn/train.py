@@ -40,7 +40,7 @@ def main():
     puzzle_output = puzzle['train'][0]['output']
     dummy_env = gym.make('arc-v0', input=puzzle_input, output=puzzle_output, need_ui=False)
 
-    need_ui = True
+    need_ui = False
     envs = []
 
     
@@ -52,6 +52,7 @@ def main():
 
     #pdb.set_trace()
     envs = [lambda: gym.make('arc-v0', input=task['input'], output=task['output'], need_ui=need_ui) for task in puzzle['train'] ]
+    envs = np.tile(envs, 3)
 
     #envs = envs[0:1]
 
@@ -147,7 +148,7 @@ def main():
 
                 batch = memory.sample(batch_size)
                 #pdb.set_trace()
-                loss = QNet.train_model(online_net, target_net, optimizer, batch)
+                loss = QNet.train_model(online_net, target_net, optimizer, batch, device)
 
                 if steps % update_target == 0:
                     update_target_model(online_net, target_net)

@@ -22,12 +22,12 @@ class QNet(nn.Module):
         return qvalue
 
     @classmethod
-    def train_model(cls, online_net, target_net, optimizer, batch):
-        states = torch.stack([torch.Tensor(s) for s in batch.state])
-        next_states = torch.stack([torch.Tensor(s) for s in batch.next_state])
-        actions = torch.Tensor(  batch.action ).float()
-        rewards = torch.Tensor(batch.reward)
-        masks = torch.Tensor(batch.mask)
+    def train_model(cls, online_net, target_net, optimizer, batch, device):
+        states = torch.stack([torch.Tensor(s).to(device) for s in batch.state])
+        next_states = torch.stack([torch.Tensor(s).to(device) for s in batch.next_state])
+        actions = torch.Tensor(  batch.action ).float().to(device)
+        rewards = torch.Tensor(batch.reward).to(device)
+        masks = torch.Tensor(batch.mask).to(device)
 
         pred = online_net(states).squeeze(1)
         next_pred = target_net(next_states).squeeze(1)
@@ -46,4 +46,4 @@ class QNet(nn.Module):
     def get_action(self, input):
         qvalue = self.forward(input)
         _, action = torch.max(qvalue, 1)
-        return action.numpy()[0]
+        return action.cpu().numpy()[0]
