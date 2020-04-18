@@ -52,7 +52,7 @@ def main():
 
     #pdb.set_trace()
     envs = [lambda: gym.make('arc-v0', input=task['input'], output=task['output'], need_ui=need_ui) for task in puzzle['train'] ]
-    envs = np.tile(envs, 3)
+    #envs = np.tile(envs, 3)
 
     #envs = envs[0:1]
 

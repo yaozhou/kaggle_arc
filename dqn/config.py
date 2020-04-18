@@ -10,4 +10,4 @@ log_interval = 10
 update_target = 100
 replay_memory_capacity = 1000
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#device = 'cpu'
+device = 'cpu'
