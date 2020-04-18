@@ -92,7 +92,7 @@ class GameEngine:
         return self.features
 
     def shape_2_feature(self, shape):
-        feature = np.zeros(MAX_FEATURE_NUM)
+        feature = np.zeros(MAX_FEATURE_NUM, dtype=np.float32)
 
         left = right = top = bottom = -1
 
@@ -130,7 +130,7 @@ class GameEngine:
 
 
     def shape_list_2_feature(self):
-        features = np.zeros((MAX_SHAPLE_NUM, MAX_FEATURE_NUM))
+        features = np.zeros((MAX_SHAPLE_NUM, MAX_FEATURE_NUM), dtype=np.float32)
 
         for idx, shape in enumerate(self.shape_list):
             features[idx] = self.shape_2_feature(shape)
