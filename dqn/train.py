@@ -30,7 +30,7 @@ def update_target_model(online_net, target_net):
 
 
 def main():
-    INPUT_FILE = '/Users/yao/develop/kaggle/arc/data/05f2a901.json'
+    INPUT_FILE = '../data/05f2a901.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
 
