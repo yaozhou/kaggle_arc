@@ -4,13 +4,14 @@ import torch.nn.functional as F
 
 from config import gamma
 class QNet(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    def __init__(self, num_inputs, num_outputs, cartpole_test):
         super(QNet, self).__init__()
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
 
-        self.fc1 = nn.Linear(num_inputs, 32 * 80)
-        self.fc2 = nn.Linear(32 * 80, num_outputs)
+
+        self.fc1 = nn.Linear(num_inputs, 10 if cartpole_test else 32 * 80)
+        self.fc2 = nn.Linear(10 if cartpole_test else 32 * 80, num_outputs)
 
         for m in self.modules():
             if isinstance(m, nn.Linear):
