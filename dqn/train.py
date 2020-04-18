@@ -14,8 +14,8 @@ import time
 import pdb
 from baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
 
-cartpole_test = True
-need_ui = True
+cartpole_test = False
+need_ui = False
 
 if (not cartpole_test):
     import gym_arc    
@@ -97,7 +97,7 @@ def main():
                     dones[i] = True
                 score += rewards[i]
                 if (dones[i]):
-                    print('epsido score %f' % score)
+                    #print('epsido score %f' % score)
                     score = 0
                 masks[i] = 0 if dones[i] else 1
 
