@@ -51,12 +51,12 @@ class ARCEnv(gym.Env):
     metadata = {'render.modes': ['human']}   
     def __init__(self, **kwargs):
         #print(kwargs)
-        input = kwargs['input']
-        output = kwargs['output'] 
-        need_ui = kwargs['need_ui']
+        self.input = kwargs['input']
+        self.output = kwargs['output'] 
+        self.need_ui = kwargs['need_ui']
         self.reward = 0
 
-        self.engine = game.GameEngine(input, output, need_ui)
+        self.engine = game.GameEngine(self.input, self.output, self.need_ui)
         self.action_space = spaces.Discrete(self.engine.action_n)
         self.observation_space = spaces.Box(low=0, high=255,
                                         shape=(game.MAX_SHAPLE_NUM * game.MAX_FEATURE_NUM,), 
@@ -65,6 +65,8 @@ class ARCEnv(gym.Env):
     def step(self, action):
         obs, reward, done, info = self.engine.do_action(action)
         self.reward += reward
+        #print(reward)
+        #print(done)
         if (reward < 0):
             done = True
 
@@ -75,6 +77,7 @@ class ARCEnv(gym.Env):
         return obs.flatten(), reward, done, info
  
     def reset(self):
+        #print('game reset')
         self.reward = 0
         self.engine.reset()
         return self.engine.features.flatten()

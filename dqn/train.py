@@ -14,6 +14,7 @@ import time
 import pdb
 from baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
 
+evalution_mode = False
 cartpole_test = False
 need_ui = False
 
@@ -36,6 +37,7 @@ def main():
     # cartpole test
     if (cartpole_test):
         envs_fun = [lambda: gym.make('CartPole-v0')]
+        envs_fun = np.tile(envs_fun, 3)
         envs = ShmemVecEnv(envs_fun)
         dummy_env = envs_fun[0]()
     else:
@@ -44,6 +46,8 @@ def main():
             puzzle = json.load(f)
 
         envs_fun = [lambda: gym.make('arc-v0', input=task['input'], output=task['output'], need_ui=need_ui) for task in puzzle['train'] ]
+        #pdb.set_trace()
+        envs_fun = envs_fun[0:1]
         envs = ShmemVecEnv(envs_fun)
         dummy_env = envs_fun[0]()
 
@@ -57,6 +61,11 @@ def main():
 
     online_net = QNet(num_inputs, num_actions, cartpole_test)
     target_net = QNet(num_inputs, num_actions, cartpole_test)
+
+    if (evalution_mode):
+        online_net = torch.load('../result/arc0.model')
+        target_net = torch.load('../result/arc0.model')
+
     update_target_model(online_net, target_net)
 
     optimizer = optim.Adam(online_net.parameters(), lr=lr)
@@ -86,15 +95,17 @@ def main():
             for state in states:
                 state = torch.Tensor(state).to(device)
                 state = state.unsqueeze(0)
-                action = get_action(state, target_net, epsilon, dummy_env)
+                action = get_action(state, target_net, 0 if evalution_mode else epsilon, dummy_env)
+                #print(action)
                 actions.append(action)
 
             next_states, rewards, dones, _ = envs.step(actions)
+            #print(rewards)
 
             masks = np.zeros(env_num)
             for i in range(env_num):
-                if (not cartpole_test and rewards[i] < 0):
-                    dones[i] = True
+                # if (not cartpole_test and rewards[i] < 0):
+                #     dones[i] = True
                 score += rewards[i]
                 if (dones[i]):
                     #print('epsido score %f' % score)
@@ -109,7 +120,7 @@ def main():
             #score += reward
             states = next_states
 
-            if steps > initial_exploration:
+            if not evalution_mode and steps > initial_exploration:
                 epsilon -= 0.00003
                 epsilon = max(epsilon, 0.1)
 

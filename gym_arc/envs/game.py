@@ -337,6 +337,7 @@ class GameEngine:
         if (new_score == self.finish_score):
             done = True
         progress = new_score - self.cur_score
+        #print(new_score, self.cur_score, progress, self.finish_score)
         self.cur_score = new_score
 
         #print('current socre : %d progress : %d' % (self.cur_score, progress))
