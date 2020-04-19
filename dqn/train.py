@@ -14,7 +14,7 @@ import time
 import pdb
 from baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
 
-evalution_mode = False
+evalution_mode = True
 cartpole_test = False
 need_ui = False
 
@@ -59,8 +59,8 @@ def main():
     print('state size:', num_inputs)
     print('action size:', num_actions)
 
-    online_net = QNet(num_inputs, num_actions, cartpole_test)
-    target_net = QNet(num_inputs, num_actions, cartpole_test)
+    online_net = QNet(num_inputs, num_actions, cartpole_test, evalution_mode)
+    target_net = QNet(num_inputs, num_actions, cartpole_test, evalution_mode)
 
     if (evalution_mode):
         online_net = torch.load('../result/arc0.model')
@@ -90,29 +90,29 @@ def main():
                 envs.render()
             steps += 1
 
+            global initial_exploration
+            if (initial_exploration > 0):
+                initial_exploration -= 1
+
             actions = []
 
             for state in states:
                 state = torch.Tensor(state).to(device)
                 state = state.unsqueeze(0)
                 action = get_action(state, target_net, 0 if evalution_mode else epsilon, dummy_env)
-                #print(action)
+                if (evalution_mode):
+                    print(action)
                 actions.append(action)
 
-            next_states, rewards, dones, _ = envs.step(actions)
+            next_states, rewards, dones, info = envs.step(actions)
             #print(rewards)
 
-            masks = np.zeros(env_num)
-            for i in range(env_num):
-                # if (not cartpole_test and rewards[i] < 0):
-                #     dones[i] = True
-                score += rewards[i]
-                if (dones[i]):
-                    #print('epsido score %f' % score)
-                    score = 0
+            masks = np.zeros(envs.num_envs)
+            for i in range(envs.num_envs):
                 masks[i] = 0 if dones[i] else 1
 
-            for i in range(env_num):
+            for i in range(envs.num_envs):
+                #print(rewards[i])
                 action_one_hot = np.zeros(dummy_env.action_space.n)
                 action_one_hot[actions[i]] = 1
                 memory.push(states[i], next_states[i], action_one_hot, rewards[i], masks[i])
@@ -129,6 +129,11 @@ def main():
 
                 if steps % update_target == 0:
                     update_target_model(online_net, target_net)
+
+            if (steps > 1028):
+                states = envs.reset()
+                steps = 0
+                print('new epsisode ------------------------------------------')
 
     except KeyboardInterrupt:
         print('save model')

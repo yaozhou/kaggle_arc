@@ -4,11 +4,11 @@ import torch.nn.functional as F
 
 from config import gamma
 class QNet(nn.Module):
-    def __init__(self, num_inputs, num_outputs, cartpole_test):
+    def __init__(self, num_inputs, num_outputs, cartpole_test, evaluation_mode):
         super(QNet, self).__init__()
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
-
+        self.evaluation_mode = evaluation_mode
 
         self.fc1 = nn.Linear(num_inputs, 10 if cartpole_test else 32 * 80)
         self.fc2 = nn.Linear(10 if cartpole_test else 32 * 80, num_outputs)
@@ -46,5 +46,7 @@ class QNet(nn.Module):
 
     def get_action(self, input):
         qvalue = self.forward(input)
+        if (self.evaluation_mode):
+            print(qvalue)
         _, action = torch.max(qvalue, 1)
         return action.cpu().numpy()[0]

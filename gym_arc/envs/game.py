@@ -395,34 +395,37 @@ class GameEngine:
         pygame.display.flip()
 
     def process_key(self, event):
+        obs = reward = done = info = None
         if event.key == pygame.K_0:
-            self.do_action(GameEngine.ACTION_SEL_0)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_0)
         elif event.key == pygame.K_1:
-            self.do_action(GameEngine.ACTION_SEL_1)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_1)
         elif event.key == pygame.K_2:
-            self.do_action(GameEngine.ACTION_SEL_2)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_2)
         elif event.key == pygame.K_3:
-            self.do_action(GameEngine.ACTION_SEL_3)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_3)
         elif event.key == pygame.K_4:
-            self.do_action(GameEngine.ACTION_SEL_4)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_4)
         elif event.key == pygame.K_UP:
-            self.do_action(GameEngine.ACTION_ATTENSION_TOP)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_TOP)
         elif event.key == pygame.K_DOWN:
-            self.do_action(GameEngine.ACTION_ATTENSION_BOTTOM)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_BOTTOM)
         elif event.key == pygame.K_LEFT:
-            self.do_action(GameEngine.ACTION_ATTENSION_LEFT)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_LEFT)
         elif event.key == pygame.K_RIGHT:
-            self.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
         elif event.key == pygame.K_SPACE:
-            self.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
+
+        return obs, reward, done, info
 
 
 if __name__ == "__main__":
     INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
-    puzzle_input = puzzle['train'][0]['input']
-    puzzle_output = puzzle['train'][0]['output']
+    puzzle_input = puzzle['train'][2]['input']
+    puzzle_output = puzzle['train'][2]['output']
     game_engine = GameEngine(puzzle_input, puzzle_output, True)
     game_engine.reset()
 
@@ -432,7 +435,8 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
-                game_engine.process_key(event)
+                obs, reward, done, info = game_engine.process_key(event)
+                print(reward)
 
         game_engine.draw_game()
 
