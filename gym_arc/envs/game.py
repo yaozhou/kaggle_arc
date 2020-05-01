@@ -5,6 +5,13 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 
+#05f2a901.json
+#06df4c85.json
+#08ed6ac7.json
+#0d3d703e.json
+#178fcbfb.json
+#1a07d186.json
+
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
     pygame.Color(0, 116, 217),
@@ -59,10 +66,22 @@ class GameEngine:
     ACTION_ATTENSION_RIGHT = 8
     ACTION_MOVE_UNTIL_COLISSION = 9
 
-    DIRECTION_TOP = 0
-    DIRECTION_BOTTOM = -1
-    DIRECTION_LEFT = -2
-    DIRECTION_RIGHT = -3
+    ACTION_SEL_COLOR_0 = 10
+    ACTION_SEL_COLOR_1 = 11
+    ACTION_SEL_COLOR_2 = 12
+    ACTION_SEL_COLOR_3 = 13
+    ACTION_SEL_COLOR_4 = 14
+    ACTION_SEL_COLOR_5 = 15
+    ACTION_SEL_COLOR_6 = 16
+    ACTION_SEL_COLOR_7 = 17
+    ACTION_SEL_COLOR_8 = 18
+    ACTION_SEL_COLOR_9 = 19
+    ACITON_CONVERT_COLOR = 20
+
+    DIRECTION_TOP = 1
+    DIRECTION_BOTTOM = 2
+    DIRECTION_LEFT = 3
+    DIRECTION_RIGHT = 4
 
     def __init__(self, input, output, need_ui):
         
@@ -82,8 +101,9 @@ class GameEngine:
 
     def reset(self):
         self.shape_list = []
-        self.cur_sel = 0
-        self.cur_attension = self.DIRECTION_BOTTOM
+        self.cur_sel = -1
+        self.cur_sel_color = -1
+        self.cur_attension = 0
         self.cur_score = self.calc_state_score(self.input, self.answer)
         #print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
 
@@ -295,6 +315,18 @@ class GameEngine:
         for grid in shape.grid_list:
             grid.move_hori(delta)
 
+    def select_color(self, color):
+        self.cur_sel_color = color
+
+    def convert_2_color(self):
+        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+        if (self.cur_sel_color < 0 or self.cur_sel_color > self.ACTION_SEL_COLOR_9): return
+
+        shape = self.shape_list[self.cur_sel]
+
+        for grid in shape.grid_list:
+            grid.color = self.cur_sel_color
+
     def move_until_collision(self):
         #pdb.set_trace()
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
@@ -330,6 +362,28 @@ class GameEngine:
             self.select_direct_attension(self.DIRECTION_RIGHT)
         elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
             self.move_until_collision()
+        elif (action == GameEngine.ACTION_SEL_COLOR_0):
+            self.select_color(0)
+        elif (action == GameEngine.ACTION_SEL_COLOR_1):
+            self.select_color(1)
+        elif (action == GameEngine.ACTION_SEL_COLOR_2):
+            self.select_color(2)
+        elif (action == GameEngine.ACTION_SEL_COLOR_3):
+            self.select_color(3)
+        elif (action == GameEngine.ACTION_SEL_COLOR_4):
+            self.select_color(4)
+        elif (action == GameEngine.ACTION_SEL_COLOR_5):
+            self.select_color(5)
+        elif (action == GameEngine.ACTION_SEL_COLOR_6):
+            self.select_color(6)
+        elif (action == GameEngine.ACTION_SEL_COLOR_7):
+            self.select_color(7)
+        elif (action == GameEngine.ACTION_SEL_COLOR_8):
+            self.select_color(8)
+        elif (action == GameEngine.ACTION_SEL_COLOR_9):
+            self.select_color(9)
+        elif (action == GameEngine.ACITON_CONVERT_COLOR):
+            self.convert_2_color()
 
         done = False
 
@@ -421,11 +475,11 @@ class GameEngine:
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/08ed6ac7.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
-    puzzle_input = puzzle['train'][2]['input']
-    puzzle_output = puzzle['train'][2]['output']
+    puzzle_input = puzzle['train'][0]['input']
+    puzzle_output = puzzle['train'][0]['output']
     game_engine = GameEngine(puzzle_input, puzzle_output, True)
     game_engine.reset()
 
