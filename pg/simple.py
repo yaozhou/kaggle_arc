@@ -18,7 +18,7 @@ batch_size = 2056
 RENDER = False
 MODEL = ''
 INPUT_FILE = '/Users/yao/develop/kaggle/arc/data/05f2a901.json'
-STEPS_LIMIT = 3
+STEPS_LIMIT = 5
 DECAY = 0.9
 
 def generate_model(feature_num, action_num):
@@ -86,16 +86,16 @@ def train():
 
         env = envs[0]
         obs = env.reset()
-        actions = []
+        #actions = []
         steps = 0
 
         while True:
-            
+            steps += 1
 
             if RENDER: env.render()
 
             act = get_action(net, torch.as_tensor(obs, dtype = torch.float32))
-            next_obs, r, done, _ = env.step(act)
+            next_obs, r, done, info = env.step(act)
             #print(r)
 
             #if (steps == 0):
@@ -105,17 +105,16 @@ def train():
             if (steps >= STEPS_LIMIT):
                 done = True
 
-            actions.append(act)
+            #actions.append(act)
             batch_acts.append(act)
             batch_obs.append(obs)
             rewards.append(r)
 
             obs = next_obs
 
-            steps += 1
-
             if done:
-                print(actions[:STEPS_LIMIT])
+                #rint(actions[:STEPS_LIMIT])
+                print('%s -------> %s' % (info['steps'], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3
@@ -130,7 +129,7 @@ def train():
                     returns[i] = acc_rewards
                 batch_weights += returns
 
-                obs, done, actions, rewards, steps = env.reset(), False, [], [], 0
+                obs, done, rewards, steps = env.reset(), False, [], 0
 
                 if len(batch_obs) > batch_size:
                     break

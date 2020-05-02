@@ -56,7 +56,8 @@ class ARCEnv(gym.Env):
         self.output = kwargs['output'] 
         self.need_ui = kwargs['need_ui']
         self.reward = 0
-        self.step_idx = 0
+        self.steps = []
+        #self.step_idx = 0
 
         self.engine = game.GameEngine(self.input, self.output, self.need_ui)
         self.action_space = spaces.Discrete(self.engine.action_n)
@@ -67,20 +68,26 @@ class ARCEnv(gym.Env):
     def step(self, action):
         obs, reward, done, info = self.engine.do_action(action)
         self.reward += reward
-        self.step_idx += 1
+        #self.step_idx += 1
+        self.steps.append(action)
 
-        if (reward != 0):
-            print('reward = %f' % reward)
+        #print('action = %d step = %d' % (self.step_idx, action) )
 
-        if (done):
-            print('episode finish reward = %f, step = %d' % (self.reward, self.step_idx))
+        # if (reward != 0):
+        #     print('reward = %f' % reward)
+
+        # if (done):
+        #     print('episode finish reward = %f, step = %d' % (self.reward, self.step_idx))
+
+        info = {'total_reward': self.reward, 'steps' : self.steps}
 
         return obs.flatten(), reward, done, info
  
     def reset(self):
         #print('game reset')
         self.reward = 0
-        self.step_idx = 0
+        #self.step_idx = 0
+        self.steps = []
         self.engine.reset()
         return self.engine.features.flatten()
  
