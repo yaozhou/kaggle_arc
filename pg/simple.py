@@ -25,6 +25,7 @@ INPUT_FILE = './data/0d3d703e.json'
 STEPS_LIMIT = 800
 DECAY = 0.9
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def generate_model(feature_num, action_num):
     hidden_size = 82
@@ -82,6 +83,9 @@ def train():
     else:
         net = torch.load(MODEL)
 
+    net.to(device)
+    net.train()
+
     optimizer = Adam(net.parameters(), lr=LR)
 
     for epoch_idx in range(EPOCHS):
@@ -92,7 +96,6 @@ def train():
 
         env = envs[0]
         obs = env.reset()
-        #actions = []
         steps = 0
 
         while True:
@@ -100,7 +103,7 @@ def train():
 
             if RENDER: env.render()
 
-            act = get_action(net, torch.as_tensor(obs, dtype = torch.float32))
+            act = get_action(net, torch.as_tensor(obs, dtype = torch.float32).to(device))
             next_obs, r, done, info = env.step(act)
 
             #if (steps == 0):
@@ -139,9 +142,9 @@ def train():
             optimizer.zero_grad()
             print('----------------------------- learning --------------------------')
             loss = compute_loss(net,
-                                    torch.as_tensor(batch_obs, dtype = torch.float32),
-                                    torch.as_tensor(batch_acts, dtype = torch.int32),
-                                    torch.as_tensor(batch_weights, dtype = torch.float32)
+                                    torch.as_tensor(batch_obs, dtype = torch.float32).to(device),
+                                    torch.as_tensor(batch_acts, dtype = torch.int32).to(device),
+                                    torch.as_tensor(batch_weights, dtype = torch.float32).to(device)
                                     )
 
             loss.backward()
