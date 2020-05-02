@@ -102,7 +102,6 @@ def train():
 
             act = get_action(net, torch.as_tensor(obs, dtype = torch.float32))
             next_obs, r, done, info = env.step(act)
-            #print(r)
 
             #if (steps == 0):
                 #print('epoch(%d) env_idx(%d) step(%d) action(%d)' % (epoch_idx, env_idx, steps, act))
@@ -111,7 +110,6 @@ def train():
             if (steps >= STEPS_LIMIT):
                 done = True
 
-            #actions.append(act)
             batch_acts.append(act)
             batch_obs.append(obs)
             rewards.append(r)
@@ -119,14 +117,11 @@ def train():
             obs = next_obs
 
             if done:
-                #rint(actions[:STEPS_LIMIT])
                 print('env:%2d %40s     ----> %5s' % (env_idx, info['steps'][:30], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3
                     env = envs[env_idx]
-                    #print('change env (%d)' % env_idx)
-
                 
                 returns = [0] * len(rewards)
                 acc_rewards = 0
@@ -139,7 +134,6 @@ def train():
 
                 if len(batch_obs) > batch_size:
                     break
-
         
         if (MODEL == ''):
             optimizer.zero_grad()
