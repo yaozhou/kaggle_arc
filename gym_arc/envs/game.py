@@ -87,7 +87,7 @@ class GameEngine:
         
         self.width = len(input[0])
         self.height = len(input)
-        self.action_n = self.ACTION_MOVE_UNTIL_COLISSION + 1
+        self.action_n = self.ACITON_CONVERT_COLOR + 1
         self.input = np.array(input).flatten()
         self.answer = np.array(output).flatten()
         self.finish_score = self.width * self.height
@@ -145,10 +145,10 @@ class GameEngine:
         feature[7] = height / 10.0
         feature[8] = ratio
         feature[9] = (1 if self.cur_sel == shape.idx else 0)
-        feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
-        feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
-        feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
-        feature[13] = (1 if self.cur_attension == self.DIRECTION_RIGHT else 0)
+        # feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
+        # feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
+        # feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
+        # feature[13] = (1 if self.cur_attension == self.DIRECTION_RIGHT else 0)
 
         return feature
 
@@ -159,14 +159,19 @@ class GameEngine:
         for idx, shape in enumerate(self.shape_list):
             features[idx] = self.shape_2_feature(shape)
 
-        # if (self.cur_attension == self.DIRECTION_TOP):
-        #     features[-1][0] = 1
-        # elif (self.cur_attension == self.DIRECTION_BOTTOM):
-        #     features[-2][0] = 1
-        # elif (self.cur_attension == self.DIRECTION_LEFT):
-        #     features[-3][0] = 1
-        # elif (self.cur_attension == self.DIRECTION_RIGHT):
-        #     features[-4][0] = 1
+        shape = features[-1]
+
+        if (self.cur_attension == self.DIRECTION_TOP):
+            shape[0] = 1
+        elif (self.cur_attension == self.DIRECTION_BOTTOM):
+            shape[1] = 1
+        elif (self.cur_attension == self.DIRECTION_LEFT):
+            shape[2] = 1
+        elif (self.cur_attension == self.DIRECTION_RIGHT):
+            shape[3] = 1
+
+        if (self.cur_sel_color >= 0 and self.cur_sel_color <= 9):
+            shape[self.cur_sel_color + 4] = 1
 
         return features
 
@@ -474,12 +479,34 @@ class GameEngine:
             obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
         elif event.key == pygame.K_SPACE:
             obs, reward, done, info = self.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
+        elif event.key == pygame.K_q:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_0)
+        elif event.key == pygame.K_w:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_1)
+        elif event.key == pygame.K_e:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_2)
+        elif event.key == pygame.K_r:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_3)
+        elif event.key == pygame.K_t:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_4)
+        elif event.key == pygame.K_y:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_5)
+        elif event.key == pygame.K_u:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_6)
+        elif event.key == pygame.K_i:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_7)
+        elif event.key == pygame.K_o:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_8)
+        elif event.key == pygame.K_p:
+            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_9)
+        elif event.key == pygame.K_TAB:
+            obs, reward, done, info = self.do_action(GameEngine.ACITON_CONVERT_COLOR)
 
         return obs, reward, done, info
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/08ed6ac7.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/0d3d703e.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
@@ -494,7 +521,7 @@ if __name__ == "__main__":
                 running = False
             elif event.type == pygame.KEYDOWN:
                 obs, reward, done, info = game_engine.process_key(event)
-                print(reward)
+                #print(reward)
 
         game_engine.draw_game()
 

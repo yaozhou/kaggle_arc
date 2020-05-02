@@ -8,18 +8,23 @@ from gym.spaces import Discrete, Box
 import sys
 import json
 import pdb
+import os
 import cv2
 import gym_arc
-sys.path.append('/Users/yao/develop/kaggle/arc/gym_arc/envs/')
+sys.path.append('./gym_arc/envs/')
+
+# soft-ac, ppo
+# 怎样优化重复动作，无意义动作
 
 LR = 0.001
 EPOCHS = 5000
 batch_size = 5012
 RENDER = False
 MODEL = ''
-INPUT_FILE = '/Users/yao/develop/kaggle/arc/data/05f2a901.json'
-STEPS_LIMIT = 10
+INPUT_FILE = './data/0d3d703e.json'
+STEPS_LIMIT = 800
 DECAY = 0.9
+FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 
 def generate_model(feature_num, action_num):
     hidden_size = 82
@@ -63,7 +68,7 @@ def train():
         e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER)
         envs.append(e)
 
-    #envs = envs[2:]
+    #envs = envs[:1]
 
     test_input = puzzle['test'][0]['input']
     env_test = gym.make('arc-v0', input=test_input, output=test_input, need_ui=RENDER)
@@ -115,7 +120,7 @@ def train():
 
             if done:
                 #rint(actions[:STEPS_LIMIT])
-                print('env:%2d %20s     ----> %5s' % (env_idx, info['steps'], info['total_reward']))
+                print('env:%2d %40s     ----> %5s' % (env_idx, info['steps'][:30], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3
@@ -148,8 +153,8 @@ def train():
             loss.backward()
             optimizer.step()
 
-            if (epoch_idx % 10 == 0):
-                torch.save(net, ('./result/arc%d.model' % epoch_idx))
+            if (epoch_idx % 20 == 0):
+                torch.save(net, ('./result/%s_%d.model' % (FILE_ID, epoch_idx)))
 
 if __name__ == '__main__':
     train()
