@@ -14,7 +14,7 @@ sys.path.append('/Users/yao/develop/kaggle/arc/gym_arc/envs/')
 
 LR = 0.01
 EPOCHS = 5000
-batch_size = 2056
+batch_size = 5012
 RENDER = False
 MODEL = ''
 INPUT_FILE = '/Users/yao/develop/kaggle/arc/data/05f2a901.json'
@@ -114,7 +114,7 @@ def train():
 
             if done:
                 #rint(actions[:STEPS_LIMIT])
-                print('%s -------> %s' % (info['steps'], info['total_reward']))
+                print('%20s -------> %5s' % (info['steps'], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3
