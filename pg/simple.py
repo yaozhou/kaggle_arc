@@ -12,17 +12,17 @@ import cv2
 import gym_arc
 sys.path.append('/Users/yao/develop/kaggle/arc/gym_arc/envs/')
 
-LR = 0.01
+LR = 0.001
 EPOCHS = 5000
 batch_size = 5012
 RENDER = False
 MODEL = ''
 INPUT_FILE = '/Users/yao/develop/kaggle/arc/data/05f2a901.json'
-STEPS_LIMIT = 5
+STEPS_LIMIT = 10
 DECAY = 0.9
 
 def generate_model(feature_num, action_num):
-    hidden_size = 32
+    hidden_size = 82
 
     net = nn.Sequential(
         nn.Linear(feature_num, hidden_size),
@@ -63,13 +63,14 @@ def train():
         e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER)
         envs.append(e)
 
-    envs = envs[2:]
+    #envs = envs[2:]
 
     test_input = puzzle['test'][0]['input']
     env_test = gym.make('arc-v0', input=test_input, output=test_input, need_ui=RENDER)
 
     n_feature = env_test.observation_space.shape[0]
     n_acts = env_test.action_space.n
+    print('feature(%d) actions(%d)' % (n_feature, n_acts))
 
     if (MODEL == ''):
         net = generate_model(n_feature, n_acts)
@@ -114,12 +115,12 @@ def train():
 
             if done:
                 #rint(actions[:STEPS_LIMIT])
-                print('%20s -------> %5s' % (info['steps'], info['total_reward']))
+                print('env:%2d %20s     ----> %5s' % (env_idx, info['steps'], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3
                     env = envs[env_idx]
-                    print('change env (%d)' % env_idx)
+                    #print('change env (%d)' % env_idx)
 
                 
                 returns = [0] * len(rewards)
