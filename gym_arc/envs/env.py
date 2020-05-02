@@ -4,6 +4,7 @@ from gym.utils import seeding
 import numpy as np
 import game
 import json
+import pdb
 
 class MultiTaskARCEnv(gym.Env):
     metadata = {'render.modes': ['human']}  

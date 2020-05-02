@@ -27,8 +27,8 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 PAD_LENGTH = 50
-MAX_SHAPLE_NUM = 8
-MAX_FEATURE_NUM = 10
+MAX_SHAPLE_NUM = 3
+MAX_FEATURE_NUM = 14
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 
@@ -135,16 +135,20 @@ class GameEngine:
 
         #print(left, right, top, bottom)
 
-        feature[0] = shape.grid_list[0].color
-        feature[1] = len(shape.grid_list)
-        feature[2] = left
-        feature[3] = right
-        feature[4] = top
-        feature[5] = bottom
-        feature[6] = width
-        feature[7] = height
+        feature[0] = shape.grid_list[0].color  / 10.0
+        feature[1] = len(shape.grid_list) / 10.0
+        feature[2] = left / 10.0
+        feature[3] = right / 10.0
+        feature[4] = top / 10.0
+        feature[5] = bottom / 10.0
+        feature[6] = width / 10.0
+        feature[7] = height / 10.0
         feature[8] = ratio
-        feature[9] = self.cur_sel == shape.idx
+        feature[9] = (1 if self.cur_sel == shape.idx else 0)
+        feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
+        feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
+        feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
+        feature[13] = (1 if self.cur_attension == self.DIRECTION_RIGHT else 0)
 
         return feature
 
@@ -155,14 +159,14 @@ class GameEngine:
         for idx, shape in enumerate(self.shape_list):
             features[idx] = self.shape_2_feature(shape)
 
-        if (self.cur_attension == self.DIRECTION_TOP):
-            features[-1][0] = 1
-        elif (self.cur_attension == self.DIRECTION_BOTTOM):
-            features[-2][0] = 1
-        elif (self.cur_attension == self.DIRECTION_LEFT):
-            features[-3][0] = 1
-        elif (self.cur_attension == self.DIRECTION_RIGHT):
-            features[-4][0] = 1
+        # if (self.cur_attension == self.DIRECTION_TOP):
+        #     features[-1][0] = 1
+        # elif (self.cur_attension == self.DIRECTION_BOTTOM):
+        #     features[-2][0] = 1
+        # elif (self.cur_attension == self.DIRECTION_LEFT):
+        #     features[-3][0] = 1
+        # elif (self.cur_attension == self.DIRECTION_RIGHT):
+        #     features[-4][0] = 1
 
         return features
 
