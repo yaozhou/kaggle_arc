@@ -9,20 +9,21 @@ import sys
 import json
 import pdb
 import os
-import cv2
 import gym_arc
 sys.path.append('./gym_arc/envs/')
 
 # soft-ac, ppo
 # 怎样优化重复动作，无意义动作
+# 找最核心特征
+# dropout
 
 LR = 0.001
 EPOCHS = 5000
-batch_size = 5012
+batch_size = 1024 * 4
 RENDER = False
 MODEL = ''
-INPUT_FILE = './data/0d3d703e.json'
-STEPS_LIMIT = 800
+INPUT_FILE = './data/05f2a901.json'
+STEPS_LIMIT = 50
 DECAY = 0.9
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,10 +33,13 @@ def generate_model(feature_num, action_num):
 
     net = nn.Sequential(
         nn.Linear(feature_num, hidden_size),
+        nn.Dropout(0.5),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
+        nn.Dropout(0.5),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
+        nn.Dropout(0.5),
         nn.ReLU(),
         nn.Linear(hidden_size, action_num),
         nn.Softmax()
@@ -66,13 +70,13 @@ def train():
     env_idx = 0
 
     for p in puzzle['train']:
-        e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER)
+        e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER, action_mode='combo')
         envs.append(e)
 
     #envs = envs[:1]
 
     test_input = puzzle['test'][0]['input']
-    env_test = gym.make('arc-v0', input=test_input, output=test_input, need_ui=RENDER)
+    env_test = gym.make('arc-v0', input=test_input, output=test_input, need_ui=RENDER, action_mode='combo')
 
     n_feature = env_test.observation_space.shape[0]
     n_acts = env_test.action_space.n
@@ -120,7 +124,7 @@ def train():
             obs = next_obs
 
             if done:
-                print('env:%2d %40s     ----> %5s' % (env_idx, info['steps'][:30], info['total_reward']))
+                print('epoch_idx:%4d env:%2d %100s     ----> %5s' % (epoch_idx, env_idx, info['steps'][:20], info['total_reward']))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % 3

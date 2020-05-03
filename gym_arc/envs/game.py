@@ -4,6 +4,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
+from actions import ComAction
 
 #05f2a901.json
 #06df4c85.json
@@ -27,7 +28,7 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 PAD_LENGTH = 50
-MAX_SHAPLE_NUM = 3
+MAX_SHAPLE_NUM = 5 + 1
 MAX_FEATURE_NUM = 14
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
@@ -55,6 +56,7 @@ class Shape:
         self.game_engine = game_engine
 
 class GameEngine:
+    # single action
     ACTION_SEL_0 = 0
     ACTION_SEL_1 = 1
     ACTION_SEL_2 = 2
@@ -78,12 +80,12 @@ class GameEngine:
     ACTION_SEL_COLOR_9 = 19
     ACITON_CONVERT_COLOR = 20
 
-    DIRECTION_TOP = 1
-    DIRECTION_BOTTOM = 2
-    DIRECTION_LEFT = 3
-    DIRECTION_RIGHT = 4
+    DIRECTION_TOP = 0
+    DIRECTION_BOTTOM = 1
+    DIRECTION_LEFT = 2
+    DIRECTION_RIGHT = 3
 
-    def __init__(self, input, output, need_ui):
+    def __init__(self, input, output, need_ui, action_mode):
         
         self.width = len(input[0])
         self.height = len(input)
@@ -92,6 +94,11 @@ class GameEngine:
         self.answer = np.array(output).flatten()
         self.finish_score = self.width * self.height
         self.need_ui = need_ui
+        self.action_mode = action_mode
+
+        if (self.action_mode == 'combo'):
+            self.action_n = ComAction.ACTION_COM_NUM.value - 1
+
         if (need_ui):
             pygame.init()
             self.screen = pygame.display.set_mode([self.width * GRID_LENGTH + PAD_LENGTH * 2, 
@@ -103,7 +110,7 @@ class GameEngine:
         self.shape_list = []
         self.cur_sel = -1
         self.cur_sel_color = -1
-        self.cur_attension = 0
+        self.cur_attension = -1
         self.cur_score = self.calc_state_score(self.input, self.answer)
         #print('total score (%s) initial score(%d) ' % (self.width * self.height, self.cur_score))
 
@@ -349,8 +356,21 @@ class GameEngine:
         elif (self.cur_attension == self.DIRECTION_LEFT):
             self.move_hori_until_collision(False)
 
-    def do_action(self, action):
-        #pdb.set_trace()
+    def do_com_action(self, action):
+        if (action >= ComAction.ACTION_COM_SEL_0_COLOR_0_CONVERT_COLOR.value and
+            action <= ComAction.ACTION_COM_SEL_4_COLOR_9_CONVERT_COLOR.value):
+            idx = action - ComAction.ACTION_COM_SEL_0_COLOR_0_CONVERT_COLOR.value
+            self.select_shape(idx // 10)
+            self.select_color(idx % 10)
+            self.convert_2_color()
+        elif (action >= ComAction.ACTION_COM_SEL_0_TOP_MOVE_UNTIL_COLISSION.value and
+            action <= ComAction.ACTION_COM_SEL_4_RIGHT_MOVE_UNTIL_COLISSION.value):
+            idx = action - ComAction.ACTION_COM_SEL_0_TOP_MOVE_UNTIL_COLISSION.value
+            self.select_shape(idx // 4)
+            self.select_direct_attension(idx % 4)
+            self.move_until_collision()
+
+    def do_single_action(self, action):
         if (action == GameEngine.ACTION_SEL_0):
             self.select_shape(0)
         elif (action == GameEngine.ACTION_SEL_1):
@@ -393,6 +413,12 @@ class GameEngine:
             self.select_color(9)
         elif (action == GameEngine.ACITON_CONVERT_COLOR):
             self.convert_2_color()
+
+    def do_action(self, action):
+        if (self.action_mode == 'combo'):
+            self.do_com_action(action + 1)
+        else:
+            self.do_single_action(action)
 
         done = False
 
