@@ -10,6 +10,7 @@ import json
 import pdb
 import os
 import gym_arc
+import time
 sys.path.append('./gym_arc/envs/')
 
 # soft-ac, ppo
@@ -20,10 +21,11 @@ sys.path.append('./gym_arc/envs/')
 LR = 0.001
 EPOCHS = 5000
 batch_size = 1024 * 4
-RENDER = False
+RENDER = True
+MODEL = './result/05f2a901_220.model'
 MODEL = ''
 INPUT_FILE = './data/05f2a901.json'
-STEPS_LIMIT = 50
+STEPS_LIMIT = 10
 DECAY = 0.9
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -33,13 +35,13 @@ def generate_model(feature_num, action_num):
 
     net = nn.Sequential(
         nn.Linear(feature_num, hidden_size),
-        nn.Dropout(0.5),
+        nn.Dropout(0.3),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
-        nn.Dropout(0.5),
+        nn.Dropout(0.3),
         nn.ReLU(),
         nn.Linear(hidden_size, hidden_size),
-        nn.Dropout(0.5),
+        nn.Dropout(0.3),
         nn.ReLU(),
         nn.Linear(hidden_size, action_num),
         nn.Softmax()
@@ -69,26 +71,35 @@ def train():
     envs = []
     env_idx = 0
 
-    for p in puzzle['train']:
+    for i in range(len(puzzle['train'])):
+        p = puzzle['train'][i]
         e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER, action_mode='combo')
         envs.append(e)
 
     #envs = envs[:1]
+    #pdb.set_trace()
 
     test_input = puzzle['test'][0]['input']
-    env_test = gym.make('arc-v0', input=test_input, output=test_input, need_ui=RENDER, action_mode='combo')
+    test_output = puzzle['test'][0]['output']
+    env_test = gym.make('arc-v0', input=test_input, output=test_output, need_ui=RENDER, action_mode='combo')
 
     n_feature = env_test.observation_space.shape[0]
     n_acts = env_test.action_space.n
     print('feature(%d) actions(%d)' % (n_feature, n_acts))
 
+
+    #
     if (MODEL == ''):
         net = generate_model(n_feature, n_acts)
+        net.train()
     else:
         net = torch.load(MODEL)
+        envs.append(env_test)
+        #pdb.set_trace()
+        print(envs)
+        #net.eval()
 
     net.to(device)
-    net.train()
 
     optimizer = Adam(net.parameters(), lr=LR)
 
@@ -123,11 +134,13 @@ def train():
 
             obs = next_obs
 
+            #time.sleep(0.5)
+
             if done:
                 print('epoch_idx:%4d env:%2d %100s     ----> %5s' % (epoch_idx, env_idx, info['steps'][:20], info['total_reward']))
 
                 if (len(envs) > 1):
-                    env_idx = (env_idx + 1) % 3
+                    env_idx = (env_idx + 1) % len(envs)
                     env = envs[env_idx]
                 
                 returns = [0] * len(rewards)
@@ -155,7 +168,7 @@ def train():
             optimizer.step()
 
             if (epoch_idx % 20 == 0):
-                torch.save(net, ('./result/%s_%d.model' % (FILE_ID, epoch_idx)))
+                torch.save(net, ('./result/%s_%4d.model' % (FILE_ID, epoch_idx)))
 
 if __name__ == '__main__':
     train()
