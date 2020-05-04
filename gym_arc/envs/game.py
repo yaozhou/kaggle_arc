@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 import pdb
 from actions import ComAction
 
-#05f2a901.json  移动形状撞向方块            *
+#05f2a901.json  移动形状撞向方块            *      不泛化
 #06df4c85.json
 #08ed6ac7.json  高度次序决定颜色            *      不泛化
 #0d3d703e.json  固定规则更换shape颜色       *
 #178fcbfb.json  点延伸成线(覆盖其他颜色)，直到边界        *   目前shape总数在test上刚好差一个
 #1a07d186.json  
 
-# 1caeab9d.json  竖直高度对齐                           *
+# 1caeab9d.json  竖直高度对齐                   *   不泛化
 # 25d487eb.json  点按单方向延伸(跳过其他颜色)
 
 COLOR_PALETTE = [
