@@ -15,23 +15,12 @@ import os
 import gym_arc
 import time
 sys.path.append('./gym_arc/envs/')
+from config import LR, EPOCHS, batch_size, RENDER, MODEL, INPUT_FILE, STEPS_LIMIT, DECAY, FILE_ID, device, action_model
 
 # soft-ac, ppo
 # 怎样优化重复动作，无意义动作
 # 找最核心特征
 # 适配所有题目，看是否泛化
-
-LR = 0.001
-EPOCHS = 5000
-batch_size = 1024 * 8
-RENDER = False
-MODEL = ''
-MODEL = './result/1caeab9d_ 120.model'
-INPUT_FILE = './data/1caeab9d.json'
-STEPS_LIMIT = 10
-DECAY = 0.98
-FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def generate_model(feature_num, action_num):
     hidden_size = 82
@@ -77,15 +66,15 @@ def train():
 
     for i in range(len(puzzle['train'])):
         p = puzzle['train'][i]
-        e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER, action_mode='combo')
+        e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER, action_mode='single')
         envs.append(e)
 
-    #envs = envs[2:]
+    #envs = envs[:1]
     #pdb.set_trace()
 
     test_input = puzzle['test'][0]['input']
     test_output = puzzle['test'][0]['output']
-    env_test = gym.make('arc-v0', input=test_input, output=test_output, need_ui=RENDER, action_mode='combo')
+    env_test = gym.make('arc-v0', input=test_input, output=test_output, need_ui=RENDER, action_mode='single')
 
     n_feature = env_test.observation_space.shape[0]
     n_acts = env_test.action_space.n
@@ -122,10 +111,6 @@ def train():
 
             act = get_action(net, torch.as_tensor(obs, dtype = torch.float32).to(device))
             next_obs, r, done, info = env.step(act)
-
-            #if (steps == 0):
-                #print('epoch(%d) env_idx(%d) step(%d) action(%d)' % (epoch_idx, env_idx, steps, act))
-                #print(net(torch.as_tensor(obs, dtype = torch.float32)).detach().numpy())
             
             if (steps >= STEPS_LIMIT):
                 done = True
@@ -139,7 +124,7 @@ def train():
             #time.sleep(5)
 
             if done:
-                print('epoch_idx:%4d %100s     ----> %5s env:%2d' % (epoch_idx, info['steps'][:20], info['total_reward'], env_idx))
+                print('epoch_idx:%4d %100s     ----> %2.1f\t env:%2d' % (epoch_idx, info['steps'][:20], info['total_reward'], env_idx))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % len(envs)

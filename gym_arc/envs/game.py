@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pdb
 from actions import ComAction
 from actions import SingleAction
+import functools
 
 #05f2a901.json  移动形状撞向方块            *      不泛化
 #06df4c85.json
@@ -16,6 +17,7 @@ from actions import SingleAction
 
 # 1caeab9d.json  竖直高度对齐                   *   不泛化
 # 25d487eb.json  点按单方向延伸(跳过其他颜色)
+# 重复选择，选择不存在的shape,负reward 
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -65,6 +67,10 @@ class Shape:
     # fix me, 临时解决方案，shape到底要不要容纳不同颜色还没想通
     def get_color(self):
         return self.grid_list[0].color
+
+    def change_color(self, color):
+        for grid in self.grid_list:
+            grid.color = color
 
     def get_bound(self):
         left = right = top = bottom = -1
@@ -316,6 +322,34 @@ class GameEngine:
         for shape in self.shape_list:
             shape.selected_as_target = (shape.get_color() == color)
 
+    def select_shape_by_size_rank(self, idx):
+        if (idx < 0 or idx >= len(self.shape_list)): return
+
+        duplidated = False
+
+        r = sorted(self.shape_list, key=functools.cmp_to_key(lambda s1, s2: len(s1.grid_list) >= len(s2.grid_list)))
+
+        if r[idx].selected:
+            duplidated = True
+
+        for shape in self.shape_list:
+            shape.selected = False
+
+        r[idx].selected = True
+
+        return duplidated
+
+    def change_2_color(self, color):
+        duplidated = False
+
+        for shape in self.shape_list:
+            if (shape.selected):
+                if (shape.get_color() == color):
+                    duplidated = True
+                shape.change_color(color)
+
+        return duplidated
+
     def collide_2_target(self):
         #pdb.set_trace()
         for target in self.shape_list:
@@ -325,6 +359,8 @@ class GameEngine:
                 x0, y0, w0, h0 = shape.get_bound()
                 x1, y1, w1, h1 = target.get_bound()
 
+                #pdb.set_trace()
+
                 if ((x1 >= x0 and x1 <= x0 + w0) or (x1 + w1 >= x0 and x1 + w1 <= x0 + w0) ):# 竖直方向碰撞
                     if (y1 > y0 + h0):# move down
                         self.move_vert_until_collision(True)
@@ -333,7 +369,7 @@ class GameEngine:
                 elif ((y1 >= y0 and y1 <= y0 + h0) or (y1 + h1 >= y0 and y1 + h1 <= y0 + h0)):# 水平方向碰撞
                     if (x1 > x0 + w0):# move right
                         self.move_hori_until_collision(True)
-                    elif (x1 + w1 > x0): # move left
+                    elif (x1 + w1 < x0): # move left
                         self.move_hori_until_collision(False)
 
     def select_direct_attension(self, direction):
@@ -490,6 +526,8 @@ class GameEngine:
 
     def do_single_action(self, action):
         action += 1
+        duplidated = False
+
         if (action >= SingleAction.ACTION_SINGLE_SEL_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_SEL_COLOR_9.value):
             color = action - SingleAction.ACTION_SINGLE_SEL_COLOR_1.value + 1
             self.select_shape_by_color(color)
@@ -498,6 +536,14 @@ class GameEngine:
             self.select_target_by_color(color)
         elif (action == SingleAction.ACTION_SINGLE_MOVE_TO_TARGET_UNTIL_COLISSION.value):
             self.collide_2_target()
+        elif (action >= SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value and action <= SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_5.value):
+            idx = action - SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value
+            duplidated = self.select_shape_by_size_rank(idx)
+        elif (action >= SingleAction.ACTION_SINGLE_CHANGE_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_CHANGE_COLOR_9.value):
+            color = action - SingleAction.ACTION_SINGLE_CHANGE_COLOR_1.value + 1
+            duplidated = self.change_2_color(color)
+
+        return duplidated
 
         # if (action == GameEngine.ACTION_SEL_0):
         #     self.select_shape(0)
@@ -543,10 +589,12 @@ class GameEngine:
         #     self.convert_2_color()
 
     def do_action(self, action):
+        duplidated = False
+
         if (self.action_mode == 'combo'):
             self.do_com_action(action + 1)
         else:
-            self.do_single_action(action)
+            duplidated = self.do_single_action(action)
 
         done = False
 
@@ -560,6 +608,9 @@ class GameEngine:
         #print('current socre : %d progress : %d' % (self.cur_score, progress))
 
         self.features = self.shape_list_2_feature()
+
+        if (duplidated):
+            progress -= 0.1
 
         return self.features, progress, done, None
 
@@ -619,42 +670,57 @@ class GameEngine:
         obs = reward = done = info = None
         if event.key == pygame.K_0:
             obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_MOVE_TO_TARGET_UNTIL_COLISSION.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value - 1)
         elif event.key == pygame.K_1:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_1.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_1.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value - 1)
         elif event.key == pygame.K_2:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_2.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_2.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_2.value - 1)
         elif event.key == pygame.K_3:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_3.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_3.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_3.value - 1)
         elif event.key == pygame.K_4:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_4.value - 1)
-        elif event.key == pygame.K_UP:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_5.value - 1)
-        elif event.key == pygame.K_DOWN:
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_4.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_4.value - 1)
+        elif event.key == pygame.K_5:
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_5.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_5.value - 1)
+        elif event.key == pygame.K_6:
             obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_6.value - 1)
-        elif event.key == pygame.K_LEFT:
+        elif event.key == pygame.K_7:
             obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_7.value - 1)
-        elif event.key == pygame.K_RIGHT:
+        elif event.key == pygame.K_8:
             obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_8.value - 1)
-        elif event.key == pygame.K_SPACE:
+        elif event.key == pygame.K_9:
             obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_9.value - 1)
         elif event.key == pygame.K_q:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_1.value - 1)
         elif event.key == pygame.K_w:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_2.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_2.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_2.value - 1)
         elif event.key == pygame.K_e:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_3.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_3.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_3.value - 1)
         elif event.key == pygame.K_r:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_4.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_4.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_4.value - 1)
         elif event.key == pygame.K_t:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_5.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_5.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_5.value - 1)
         elif event.key == pygame.K_y:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_6.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_6.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_6.value - 1)
         elif event.key == pygame.K_u:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_7.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_7.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_7.value - 1)
         elif event.key == pygame.K_i:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_8.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_8.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_8.value - 1)
         elif event.key == pygame.K_o:
-            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_9.value - 1)
+            #obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_9.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_CHANGE_COLOR_9.value - 1)
         # elif event.key == pygame.K_p:
         #     obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_9)
         # elif event.key == pygame.K_TAB:
@@ -668,11 +734,15 @@ class GameEngine:
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/08ed6ac7.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
     puzzle_output = puzzle['train'][0]['output']
+
+    # puzzle_input = puzzle['test'][0]['input']
+    # puzzle_output = puzzle['test'][0]['output']
+    
     game_engine = GameEngine(puzzle_input, puzzle_output, True, 'single')
     game_engine.reset()
 
