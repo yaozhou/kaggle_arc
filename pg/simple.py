@@ -1,3 +1,6 @@
+#!/bin/python
+# -*- coding: UTF-8 -*-
+
 import torch
 import torch.nn as nn
 from torch.distributions.categorical import Categorical
@@ -24,9 +27,9 @@ batch_size = 1024 * 8
 RENDER = False
 #MODEL = './result/05f2a901_220.model'
 MODEL = ''
-INPUT_FILE = './data/08ed6ac7.json'
-STEPS_LIMIT = 50 * 2
-DECAY = 0.9
+INPUT_FILE = './data/1caeab9d.json'
+STEPS_LIMIT = 10
+DECAY = 0.98
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -77,7 +80,7 @@ def train():
         e = gym.make('arc-v0', input=p['input'], output=p['output'], need_ui=RENDER, action_mode='combo')
         envs.append(e)
 
-    #envs = envs[:1]
+    #envs = envs[2:]
     #pdb.set_trace()
 
     test_input = puzzle['test'][0]['input']
@@ -87,7 +90,6 @@ def train():
     n_feature = env_test.observation_space.shape[0]
     n_acts = env_test.action_space.n
     print('feature(%d) actions(%d)' % (n_feature, n_acts))
-
 
     #
     if (MODEL == ''):
@@ -134,10 +136,10 @@ def train():
 
             obs = next_obs
 
-            #time.sleep(0.5)
+            #time.sleep(5)
 
             if done:
-                print('epoch_idx:%4d env:%2d %100s     ----> %5s' % (epoch_idx, env_idx, info['steps'][:20], info['total_reward']))
+                print('epoch_idx:%4d %100s     ----> %5s env:%2d' % (epoch_idx, info['steps'][:20], info['total_reward'], env_idx))
 
                 if (len(envs) > 1):
                     env_idx = (env_idx + 1) % len(envs)
