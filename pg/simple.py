@@ -20,12 +20,12 @@ sys.path.append('./gym_arc/envs/')
 
 LR = 0.001
 EPOCHS = 5000
-batch_size = 1024 * 4
+batch_size = 1024 * 8
 RENDER = False
 #MODEL = './result/05f2a901_220.model'
 MODEL = ''
-INPUT_FILE = './data/0d3d703e.json'
-STEPS_LIMIT = 50
+INPUT_FILE = './data/08ed6ac7.json'
+STEPS_LIMIT = 50 * 2
 DECAY = 0.9
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
