@@ -8,7 +8,7 @@ from actions import ComAction
 
 #05f2a901.json
 #06df4c85.json
-#08ed6ac7.json
+#08ed6ac7.json  高度次序决定颜色
 #0d3d703e.json
 #178fcbfb.json
 #1a07d186.json
@@ -28,7 +28,7 @@ COLOR_PALETTE = [
 
 GRID_LENGTH = 30
 PAD_LENGTH = 50
-MAX_SHAPLE_NUM = 5 + 1
+MAX_SHAPLE_NUM = 6 + 1
 MAX_FEATURE_NUM = 14
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
@@ -331,6 +331,25 @@ class GameEngine:
         for grid in shape.grid_list:
             grid.move_hori(delta)
 
+    def spread_hori(self):
+        shape = self.shape_list[self.cur_sel]
+        if (len(shape.grid_list) != 1): return
+
+        grid = shape.grid_list[0]
+        for i in range(self.width):
+            if (i != grid.x):
+                shape.grid_list.append(Grid(i, grid.y, self.width * grid.y + i, grid.color, shape))
+
+    def spread_vert(self):
+        shape = self.shape_list[self.cur_sel]
+        if (len(shape.grid_list) != 1): return
+
+        grid = shape.grid_list[0]
+        for i in range(self.height):
+            if (i != grid.y):
+                shape.grid_list.append(Grid(grid.x, i, self.width * i + grid.x, grid.color, shape))
+
+
     def select_color(self, color):
         self.cur_sel_color = color
 
@@ -369,6 +388,14 @@ class GameEngine:
             self.select_shape(idx // 4)
             self.select_direct_attension(idx % 4)
             self.move_until_collision()
+        elif (action >= ComAction.ACTION_COM_SEL_0_POINT_HORI_SPREAD.value and
+            action <= ComAction.ACTION_COM_SEL_4_POINT_VERT_SPEAD.value):
+            idx = action - ComAction.ACTION_COM_SEL_0_POINT_HORI_SPREAD.value
+            self.select_shape(idx // 4)
+            if (idx % 2 == 0):
+                self.spread_hori()
+            else:
+                self.spread_vert()
 
     def do_single_action(self, action):
         if (action == GameEngine.ACTION_SEL_0):
@@ -527,17 +554,21 @@ class GameEngine:
             obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_9)
         elif event.key == pygame.K_TAB:
             obs, reward, done, info = self.do_action(GameEngine.ACITON_CONVERT_COLOR)
+        elif event.key == pygame.K_a:
+            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_POINT_HORI_SPREAD.value)
+        elif event.key == pygame.K_b:
+            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_POINT_VERT_SPREAD.value)
 
         return obs, reward, done, info
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/0d3d703e.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/178fcbfb.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
     puzzle_output = puzzle['train'][0]['output']
-    game_engine = GameEngine(puzzle_input, puzzle_output, True)
+    game_engine = GameEngine(puzzle_input, puzzle_output, True, 'combo')
     game_engine.reset()
 
     running = True

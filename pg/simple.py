@@ -16,16 +16,16 @@ sys.path.append('./gym_arc/envs/')
 # soft-ac, ppo
 # 怎样优化重复动作，无意义动作
 # 找最核心特征
-# dropout
+# 适配所有题目，看是否泛化
 
 LR = 0.001
 EPOCHS = 5000
 batch_size = 1024 * 4
-RENDER = True
-MODEL = './result/05f2a901_220.model'
+RENDER = False
+#MODEL = './result/05f2a901_220.model'
 MODEL = ''
-INPUT_FILE = './data/05f2a901.json'
-STEPS_LIMIT = 10
+INPUT_FILE = './data/0d3d703e.json'
+STEPS_LIMIT = 50
 DECAY = 0.9
 FILE_ID = os.path.basename(INPUT_FILE).split('.')[0]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,6 +54,7 @@ def generate_model(feature_num, action_num):
     return net
 
 def get_categorical(model, obs):
+    model.eval()
     probs = model(obs)
     return Categorical(probs=probs)
 
@@ -95,9 +96,8 @@ def train():
     else:
         net = torch.load(MODEL)
         envs.append(env_test)
-        #pdb.set_trace()
         print(envs)
-        #net.eval()
+        net.eval()
 
     net.to(device)
 
@@ -156,6 +156,7 @@ def train():
                     break
         
         if (MODEL == ''):
+            net.train()
             optimizer.zero_grad()
             print('----------------------------- learning --------------------------')
             loss = compute_loss(net,
