@@ -5,6 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pdb
 from actions import ComAction
+from actions import SingleAction
 
 #05f2a901.json  移动形状撞向方块            *      不泛化
 #06df4c85.json
@@ -35,6 +36,7 @@ MAX_SHAPLE_NUM = 6 + 1
 MAX_FEATURE_NUM = 14
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
+COLOR_SELECTED_AS_TARGET = pygame.Color(0x44, 0x33, 0x88)
 
 class Grid:
     def __init__(self, x, y, idx, color, shape):
@@ -57,6 +59,12 @@ class Shape:
         self.grid_list = []
         self.idx = idx
         self.game_engine = game_engine
+        self.selected = False
+        self.selected_as_target = False
+
+    # fix me, 临时解决方案，shape到底要不要容纳不同颜色还没想通
+    def get_color(self):
+        return self.grid_list[0].color
 
     def get_bound(self):
         left = right = top = bottom = -1
@@ -76,7 +84,7 @@ class Shape:
 
         width = right - left + 1
         height = bottom - top + 1
-        return left, top, right, bottom
+        return left, top, width, height
 
     def move(self, delta_x, delta_y):
         for grid in self.grid_list:
@@ -127,6 +135,8 @@ class GameEngine:
 
         if (self.action_mode == 'combo'):
             self.action_n = ComAction.ACTION_COM_NUM.value - 1
+        else:
+            self.action_n = SingleAction.ACTION_SINGLE_NUM.value - 1
 
         if (need_ui):
             pygame.init()
@@ -180,7 +190,7 @@ class GameEngine:
         feature[6] = width / 10.0
         feature[7] = height / 10.0
         feature[8] = ratio
-        feature[9] = (1 if self.cur_sel == shape.idx else 0)
+        feature[9] = (1 if shape.selected else 0)
         # feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
         # feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
         # feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
@@ -298,6 +308,34 @@ class GameEngine:
     def select_shape(self, idx):
         self.cur_sel = idx
 
+    def select_shape_by_color(self, color):
+        for shape in self.shape_list:
+            shape.selected = (shape.get_color() == color)
+
+    def select_target_by_color(self, color):
+        for shape in self.shape_list:
+            shape.selected_as_target = (shape.get_color() == color)
+
+    def collide_2_target(self):
+        #pdb.set_trace()
+        for target in self.shape_list:
+            if (not target.selected_as_target): continue
+            for shape in self.shape_list:
+                if (not shape.selected or shape.idx == target.idx): continue
+                x0, y0, w0, h0 = shape.get_bound()
+                x1, y1, w1, h1 = target.get_bound()
+
+                if ((x1 >= x0 and x1 <= x0 + w0) or (x1 + w1 >= x0 and x1 + w1 <= x0 + w0) ):# 竖直方向碰撞
+                    if (y1 > y0 + h0):# move down
+                        self.move_vert_until_collision(True)
+                    elif (y1 + h1 < y0):# move up
+                        self.move_vert_until_collision(False)
+                elif ((y1 >= y0 and y1 <= y0 + h0) or (y1 + h1 >= y0 and y1 + h1 <= y0 + h0)):# 水平方向碰撞
+                    if (x1 > x0 + w0):# move right
+                        self.move_hori_until_collision(True)
+                    elif (x1 + w1 > x0): # move left
+                        self.move_hori_until_collision(False)
+
     def select_direct_attension(self, direction):
         self.cur_attension = direction
 
@@ -311,54 +349,59 @@ class GameEngine:
 
     # move
     def move_vert_until_collision(self, down):
-        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+        #if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
 
-        shape = self.shape_list[self.cur_sel]
-        stop = False
-        delta = 0
+        #pdb.set_trace()
+        for shape in self.shape_list:
+            if (not shape.selected): continue
 
-        while True:
+            #pdb.set_trace()
+            stop = False
+            delta = 0
+
+            while True:
+                for grid in shape.grid_list:
+                    y = grid.y + delta + (1 if down else -1)
+                    if (y > self.height - 1 or y < 0):
+                        stop = True
+                        break
+
+                    shape_idx = self.get_shape_idx_from_xy(grid.x, y)
+                    if (shape_idx >= 0 and shape_idx != shape.idx):
+                        stop = True
+                        break
+                if (stop): break
+                delta += (1 if down else -1)
+
             for grid in shape.grid_list:
-                y = grid.y + delta + (1 if down else -1)
-                if (y > self.height - 1 or y < 0):
-                    stop = True
-                    break
-
-                shape_idx = self.get_shape_idx_from_xy(grid.x, y)
-                if (shape_idx >= 0 and shape_idx != self.cur_sel):
-                    stop = True
-                    break
-            if (stop): break
-            delta += (1 if down else -1)
-
-        for grid in shape.grid_list:
-            grid.move_vert(delta)
+                grid.move_vert(delta)
 
     # move hori
     def move_hori_until_collision(self, right):
-        if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+        #if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
+        for shape in self.shape_list:
+            #shape = self.shape_list[self.cur_sel]
+            if (not shape.selected): continue
+            stop = False
+            delta = 0
 
-        shape = self.shape_list[self.cur_sel]
-        stop = False
-        delta = 0
+            while True:
+                for grid in shape.grid_list:
+                    x = grid.x + delta + (1 if right else -1)
+                    if (x > self.width - 1 or x < 0):
+                        stop = True
+                        break
 
-        while True:
+                    shape_idx = self.get_shape_idx_from_xy(x, grid.y)
+                    if (shape_idx >= 0 and shape_idx != shape.idx):
+                        stop = True
+                        break
+
+                if (stop): break
+                delta += (1 if right else -1)
+
             for grid in shape.grid_list:
-                x = grid.x + delta + (1 if right else -1)
-                if (x > self.width - 1 or x < 0):
-                    stop = True
-                    break
-
-                shape_idx = self.get_shape_idx_from_xy(x, grid.y)
-                if (shape_idx >= 0 and shape_idx != self.cur_sel):
-                    stop = True
-                    break
-
-            if (stop): break
-            delta += (1 if right else -1)
-
-        for grid in shape.grid_list:
-            grid.move_hori(delta)
+                grid.move_hori(delta)
 
     def spread_hori(self):
         shape = self.shape_list[self.cur_sel]
@@ -397,10 +440,10 @@ class GameEngine:
         from_shape = self.shape_list[from_idx]
         to_shape = self.shape_list[to_idx]
 
-        _, _, _, to_bottom = to_shape.get_bound()
-        _, _, _, from_bottom = from_shape.get_bound()
+        _, y0, _, h0 = to_shape.get_bound()
+        _, y1, _, h1 = from_shape.get_bound()
 
-        from_shape.move(0, to_bottom - from_bottom)
+        from_shape.move(0, (y0 + h0) - (y1 + h1) )
 
     def move_until_collision(self):
         #pdb.set_trace()
@@ -446,48 +489,58 @@ class GameEngine:
             self.bottom_align(from_idx, to_idx)
 
     def do_single_action(self, action):
-        if (action == GameEngine.ACTION_SEL_0):
-            self.select_shape(0)
-        elif (action == GameEngine.ACTION_SEL_1):
-            self.select_shape(1)
-        elif (action == GameEngine.ACTION_SEL_2):
-            self.select_shape(2)
-        elif (action == GameEngine.ACTION_SEL_3):
-            self.select_shape(3)
-        elif (action == GameEngine.ACTION_SEL_4):
-            self.select_shape(4)
-        elif (action == GameEngine.ACTION_ATTENSION_TOP):
-            self.select_direct_attension(self.DIRECTION_TOP)
-        elif (action == GameEngine.ACTION_ATTENSION_BOTTOM):
-            self.select_direct_attension(self.DIRECTION_BOTTOM)
-        elif (action == GameEngine.ACTION_ATTENSION_LEFT):
-            self.select_direct_attension(self.DIRECTION_LEFT)
-        elif (action == GameEngine.ACTION_ATTENSION_RIGHT):
-            self.select_direct_attension(self.DIRECTION_RIGHT)
-        elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
-            self.move_until_collision()
-        elif (action == GameEngine.ACTION_SEL_COLOR_0):
-            self.select_color(0)
-        elif (action == GameEngine.ACTION_SEL_COLOR_1):
-            self.select_color(1)
-        elif (action == GameEngine.ACTION_SEL_COLOR_2):
-            self.select_color(2)
-        elif (action == GameEngine.ACTION_SEL_COLOR_3):
-            self.select_color(3)
-        elif (action == GameEngine.ACTION_SEL_COLOR_4):
-            self.select_color(4)
-        elif (action == GameEngine.ACTION_SEL_COLOR_5):
-            self.select_color(5)
-        elif (action == GameEngine.ACTION_SEL_COLOR_6):
-            self.select_color(6)
-        elif (action == GameEngine.ACTION_SEL_COLOR_7):
-            self.select_color(7)
-        elif (action == GameEngine.ACTION_SEL_COLOR_8):
-            self.select_color(8)
-        elif (action == GameEngine.ACTION_SEL_COLOR_9):
-            self.select_color(9)
-        elif (action == GameEngine.ACITON_CONVERT_COLOR):
-            self.convert_2_color()
+        action += 1
+        if (action >= SingleAction.ACTION_SINGLE_SEL_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_SEL_COLOR_9.value):
+            color = action - SingleAction.ACTION_SINGLE_SEL_COLOR_1.value + 1
+            self.select_shape_by_color(color)
+        elif (action >= SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_9.value):
+            color = action - SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value + 1
+            self.select_target_by_color(color)
+        elif (action == SingleAction.ACTION_SINGLE_MOVE_TO_TARGET_UNTIL_COLISSION.value):
+            self.collide_2_target()
+
+        # if (action == GameEngine.ACTION_SEL_0):
+        #     self.select_shape(0)
+        # elif (action == GameEngine.ACTION_SEL_1):
+        #     self.select_shape(1)
+        # elif (action == GameEngine.ACTION_SEL_2):
+        #     self.select_shape(2)
+        # elif (action == GameEngine.ACTION_SEL_3):
+        #     self.select_shape(3)
+        # elif (action == GameEngine.ACTION_SEL_4):
+        #     self.select_shape(4)
+        # elif (action == GameEngine.ACTION_ATTENSION_TOP):
+        #     self.select_direct_attension(self.DIRECTION_TOP)
+        # elif (action == GameEngine.ACTION_ATTENSION_BOTTOM):
+        #     self.select_direct_attension(self.DIRECTION_BOTTOM)
+        # elif (action == GameEngine.ACTION_ATTENSION_LEFT):
+        #     self.select_direct_attension(self.DIRECTION_LEFT)
+        # elif (action == GameEngine.ACTION_ATTENSION_RIGHT):
+        #     self.select_direct_attension(self.DIRECTION_RIGHT)
+        # elif (action == GameEngine.ACTION_MOVE_UNTIL_COLISSION):
+        #     self.move_until_collision()
+        # elif (action == GameEngine.ACTION_SEL_COLOR_0):
+        #     self.select_color(0)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_1):
+        #     self.select_color(1)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_2):
+        #     self.select_color(2)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_3):
+        #     self.select_color(3)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_4):
+        #     self.select_color(4)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_5):
+        #     self.select_color(5)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_6):
+        #     self.select_color(6)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_7):
+        #     self.select_color(7)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_8):
+        #     self.select_color(8)
+        # elif (action == GameEngine.ACTION_SEL_COLOR_9):
+        #     self.select_color(9)
+        # elif (action == GameEngine.ACITON_CONVERT_COLOR):
+        #     self.convert_2_color()
 
     def do_action(self, action):
         if (self.action_mode == 'combo'):
@@ -535,8 +588,12 @@ class GameEngine:
                 pygame.draw.rect(self.screen, COLOR_PALETTE[grid.color], pygame.Rect(PAD_LENGTH + grid.x * GRID_LENGTH,
                                 PAD_LENGTH + grid.y * GRID_LENGTH, GRID_LENGTH, GRID_LENGTH))
 
-                if (shape_idx == self.cur_sel):
+                if (shape.selected):
                     pygame.draw.rect(self.screen, COLOR_SELECTED, (PAD_LENGTH + grid.x * GRID_LENGTH, 
+                    PAD_LENGTH + grid.y * GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
+
+                if (shape.selected_as_target):
+                    pygame.draw.rect(self.screen, COLOR_SELECTED_AS_TARGET, (PAD_LENGTH + grid.x * GRID_LENGTH, 
                     PAD_LENGTH + grid.y * GRID_LENGTH, GRID_LENGTH, GRID_LENGTH), 1)
 
                 self.screen.blit(text_surface, dest=(PAD_LENGTH + (grid.x + 0.5) * GRID_LENGTH, 
@@ -561,62 +618,62 @@ class GameEngine:
     def process_key(self, event):
         obs = reward = done = info = None
         if event.key == pygame.K_0:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_0)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_MOVE_TO_TARGET_UNTIL_COLISSION.value - 1)
         elif event.key == pygame.K_1:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_1.value - 1)
         elif event.key == pygame.K_2:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_2)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_2.value - 1)
         elif event.key == pygame.K_3:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_3)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_3.value - 1)
         elif event.key == pygame.K_4:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_4)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_4.value - 1)
         elif event.key == pygame.K_UP:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_TOP)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_5.value - 1)
         elif event.key == pygame.K_DOWN:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_BOTTOM)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_6.value - 1)
         elif event.key == pygame.K_LEFT:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_LEFT)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_7.value - 1)
         elif event.key == pygame.K_RIGHT:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_ATTENSION_RIGHT)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_8.value - 1)
         elif event.key == pygame.K_SPACE:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_MOVE_UNTIL_COLISSION)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_9.value - 1)
         elif event.key == pygame.K_q:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_0)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value - 1)
         elif event.key == pygame.K_w:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_2.value - 1)
         elif event.key == pygame.K_e:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_2)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_3.value - 1)
         elif event.key == pygame.K_r:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_3)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_4.value - 1)
         elif event.key == pygame.K_t:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_4)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_5.value - 1)
         elif event.key == pygame.K_y:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_5)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_6.value - 1)
         elif event.key == pygame.K_u:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_6)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_7.value - 1)
         elif event.key == pygame.K_i:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_7)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_8.value - 1)
         elif event.key == pygame.K_o:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_8)
-        elif event.key == pygame.K_p:
-            obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_9)
-        elif event.key == pygame.K_TAB:
-            obs, reward, done, info = self.do_action(GameEngine.ACITON_CONVERT_COLOR)
-        elif event.key == pygame.K_a:
-            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_2.value - 1)
-        elif event.key == pygame.K_b:
-            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_1.value - 1)
+            obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_9.value - 1)
+        # elif event.key == pygame.K_p:
+        #     obs, reward, done, info = self.do_action(GameEngine.ACTION_SEL_COLOR_9)
+        # elif event.key == pygame.K_TAB:
+        #     obs, reward, done, info = self.do_action(GameEngine.ACITON_CONVERT_COLOR)
+        # elif event.key == pygame.K_a:
+        #     obs, reward, done, info = self.do_action(SingleAction.ACTION_SINGLE_SEL_COLOR_1.value - 1)
+        # elif event.key == pygame.K_b:
+        #     obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_1.value - 1)
 
         return obs, reward, done, info
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/1caeab9d.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/05f2a901.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
     puzzle_output = puzzle['train'][0]['output']
-    game_engine = GameEngine(puzzle_input, puzzle_output, True, 'combo')
+    game_engine = GameEngine(puzzle_input, puzzle_output, True, 'single')
     game_engine.reset()
 
     running = True
