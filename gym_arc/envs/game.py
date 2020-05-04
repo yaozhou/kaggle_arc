@@ -13,6 +13,8 @@ from actions import ComAction
 #178fcbfb.json
 #1a07d186.json
 
+# 1caeab9d.json  竖直高度对齐
+
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
     pygame.Color(0, 116, 217),
@@ -54,6 +56,32 @@ class Shape:
         self.grid_list = []
         self.idx = idx
         self.game_engine = game_engine
+
+    def get_bound(self):
+        left = right = top = bottom = -1
+
+        for grid in self.grid_list:
+            if (left == -1 or grid.x < left):
+                left = grid.x
+            
+            if (right == -1 or grid.x > right):
+                right = grid.x
+
+            if (top == -1 or grid.y < top):
+                top = grid.y
+
+            if (bottom == -1 or grid.y > bottom):
+                bottom = grid.y
+
+        width = right - left + 1
+        height = bottom - top + 1
+        return left, top, right, bottom
+
+    def move(self, delta_x, delta_y):
+        for grid in self.grid_list:
+            grid.move_hori(delta_x)
+            grid.move_vert(delta_y)
+
 
 class GameEngine:
     # single action
@@ -362,6 +390,17 @@ class GameEngine:
         for grid in shape.grid_list:
             grid.color = self.cur_sel_color
 
+    def bottom_align(self, from_idx, to_idx):
+        if (from_idx < 0 or from_idx >= len(self.shape_list) or to_idx < 0 or to_idx >= len(self.shape_list)): return
+
+        from_shape = self.shape_list[from_idx]
+        to_shape = self.shape_list[to_idx]
+
+        _, _, _, to_bottom = to_shape.get_bound()
+        _, _, _, from_bottom = from_shape.get_bound()
+
+        from_shape.move(0, to_bottom - from_bottom)
+
     def move_until_collision(self):
         #pdb.set_trace()
         if (self.cur_sel < 0 or self.cur_sel >= len(self.shape_list)): return
@@ -396,6 +435,14 @@ class GameEngine:
                 self.spread_hori()
             else:
                 self.spread_vert()
+        elif (action >= ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_1.value and
+            action <= ComAction.ACTION_COM_SEL_4_BOTTOM_ALIGN_TO_3.value):
+            idx = action - ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_1.value
+            from_idx = idx // 4
+            to_idx = idx % 4
+            if (to_idx >= from_idx): to_idx += 1
+            self.select_shape(from_idx)
+            self.bottom_align(from_idx, to_idx)
 
     def do_single_action(self, action):
         if (action == GameEngine.ACTION_SEL_0):
@@ -555,15 +602,15 @@ class GameEngine:
         elif event.key == pygame.K_TAB:
             obs, reward, done, info = self.do_action(GameEngine.ACITON_CONVERT_COLOR)
         elif event.key == pygame.K_a:
-            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_POINT_HORI_SPREAD.value)
+            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_2.value - 1)
         elif event.key == pygame.K_b:
-            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_POINT_VERT_SPREAD.value)
+            obs, reward, done, info = self.do_action(ComAction.ACTION_COM_SEL_0_BOTTOM_ALIGN_TO_1.value - 1)
 
         return obs, reward, done, info
 
 
 if __name__ == "__main__":
-    INPUT_FILE = '/Users/yao/develop/ARC/data/training/178fcbfb.json'
+    INPUT_FILE = '/Users/yao/develop/ARC/data/training/1caeab9d.json'
     with open(INPUT_FILE,'r') as f:
         puzzle = json.load(f)
     puzzle_input = puzzle['train'][0]['input']
