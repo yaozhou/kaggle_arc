@@ -15,9 +15,16 @@ import functools
 #178fcbfb.json  点延伸成线(覆盖其他颜色)，直到边界        *   目前shape总数在test上刚好差一个
 #1a07d186.json  
 
+
 # 1caeab9d.json  竖直高度对齐                   *   不泛化
 # 25d487eb.json  点按单方向延伸(跳过其他颜色)
+
+# 1f642eb9   点向大方块移动，在边界碰撞时融入，需要考虑同一方块不同颜色的问题
+# 25ff71a9   向下移动一个格子
+# 2c608aff.json 选择点后，向大方块延伸
+
 # 重复选择，选择不存在的shape,负reward 
+
 
 COLOR_PALETTE = [
     pygame.Color(0, 0, 0),
@@ -35,7 +42,7 @@ COLOR_PALETTE = [
 GRID_LENGTH = 30
 PAD_LENGTH = 50
 MAX_SHAPLE_NUM = 6 + 1
-MAX_FEATURE_NUM = 14
+MAX_FEATURE_NUM = 19
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 COLOR_SELECTED_AS_TARGET = pygame.Color(0x44, 0x33, 0x88)
@@ -187,16 +194,18 @@ class GameEngine:
 
         #print(left, right, top, bottom)
 
-        feature[0] = shape.grid_list[0].color  / 10.0
-        feature[1] = len(shape.grid_list) / 10.0
-        feature[2] = left / 10.0
-        feature[3] = right / 10.0
-        feature[4] = top / 10.0
-        feature[5] = bottom / 10.0
-        feature[6] = width / 10.0
-        feature[7] = height / 10.0
-        feature[8] = ratio
-        feature[9] = (1 if shape.selected else 0)
+        feature[shape.grid_list[0].color] = 1
+
+        #feature[0] = shape.grid_list[0].color  / 10.0
+        feature[10] = len(shape.grid_list) / 10.0
+        feature[11] = left / 10.0
+        feature[12] = right / 10.0
+        feature[13] = top / 10.0
+        feature[14] = bottom / 10.0
+        feature[15] = width / 10.0
+        feature[16] = height / 10.0
+        feature[17] = ratio
+        feature[18] = (1 if shape.selected else 0)
         # feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
         # feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
         # feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
@@ -609,8 +618,8 @@ class GameEngine:
 
         self.features = self.shape_list_2_feature()
 
-        if (duplidated):
-            progress -= 0.1
+        # if (duplidated):
+        #     progress -= 0.1
 
         return self.features, progress, done, None
 
