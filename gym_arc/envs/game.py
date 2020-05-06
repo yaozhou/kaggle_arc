@@ -403,6 +403,7 @@ class GameEngine:
             shape.selected_as_target = False
 
     def change_2_color(self, color):
+        #pdb.set_trace()
         necessary = self.has_shape_selected()
 
         for shape in self.shape_list:
@@ -659,12 +660,12 @@ class GameEngine:
         #     self.convert_2_color()
 
     def do_action(self, action):
-        duplicated = False
+        necessary = True
 
         if (self.action_mode == 'combo'):
             self.do_com_action(action + 1)
         else:
-            duplicated = self.do_single_action(action)
+            necessary = self.do_single_action(action)
 
         done = False
 
@@ -679,7 +680,7 @@ class GameEngine:
 
         self.features = self.shape_list_2_feature()
 
-        if (duplicated):
+        if (not necessary):
             progress -= 0.1
 
         #print('progress %2f' % progress)
