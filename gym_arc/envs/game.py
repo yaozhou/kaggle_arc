@@ -351,7 +351,7 @@ class GameEngine:
     def select_shape_by_size_rank(self, idx):
         # size 有大小相同的元素
         size_list = list(map(lambda shape: len(shape.grid_list), self.shape_list))
-        if (np.unique(size_list) < len(size_list)):
+        if (len(np.unique(size_list)) < len(size_list)):
             return False
 
         if (idx < 0 or idx >= len(self.shape_list)):
