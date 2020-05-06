@@ -42,7 +42,7 @@ COLOR_PALETTE = [
 GRID_LENGTH = 30
 PAD_LENGTH = 50
 MAX_SHAPLE_NUM = 6 + 1
-MAX_FEATURE_NUM = 19
+MAX_FEATURE_NUM = 30
 COLOR_EMPTY = COLOR_PALETTE[0]
 COLOR_SELECTED = pygame.Color(0x99,0x66,0xff)
 COLOR_SELECTED_AS_TARGET = pygame.Color(0x44, 0x33, 0x88)
@@ -195,17 +195,23 @@ class GameEngine:
         #print(left, right, top, bottom)
 
         feature[shape.grid_list[0].color] = 1
+        if (self.cur_sel_color > 0 and self.cur_sel_color <= 9):
+            feature[self.cur_sel_color + 10] = 1
 
         #feature[0] = shape.grid_list[0].color  / 10.0
-        feature[10] = len(shape.grid_list) / 10.0
-        feature[11] = left / 10.0
-        feature[12] = right / 10.0
-        feature[13] = top / 10.0
-        feature[14] = bottom / 10.0
-        feature[15] = width / 10.0
-        feature[16] = height / 10.0
-        feature[17] = ratio
-        feature[18] = (1 if shape.selected else 0)
+        feature[20] = len(shape.grid_list) / 10.0
+        feature[21] = left / 10.0
+        feature[22] = right / 10.0
+        feature[23] = top / 10.0
+        feature[24] = bottom / 10.0
+        feature[25] = width / 10.0
+        feature[26] = height / 10.0
+        feature[27] = ratio
+        feature[28] = float(shape.selected)
+        feature[29] = float(shape.selected_as_target)
+
+        
+
         # feature[10] = (1 if self.cur_attension == self.DIRECTION_TOP else 0)
         # feature[11] = (1 if self.cur_attension == self.DIRECTION_BOTTOM else 0)
         # feature[12] = (1 if self.cur_attension == self.DIRECTION_LEFT else 0)
@@ -220,19 +226,19 @@ class GameEngine:
         for idx, shape in enumerate(self.shape_list):
             features[idx] = self.shape_2_feature(shape)
 
-        shape = features[-1]
+        # shape = features[-1]
 
-        if (self.cur_attension == self.DIRECTION_TOP):
-            shape[0] = 1
-        elif (self.cur_attension == self.DIRECTION_BOTTOM):
-            shape[1] = 1
-        elif (self.cur_attension == self.DIRECTION_LEFT):
-            shape[2] = 1
-        elif (self.cur_attension == self.DIRECTION_RIGHT):
-            shape[3] = 1
+        # if (self.cur_attension == self.DIRECTION_TOP):
+        #     shape[0] = 1
+        # elif (self.cur_attension == self.DIRECTION_BOTTOM):
+        #     shape[1] = 1
+        # elif (self.cur_attension == self.DIRECTION_LEFT):
+        #     shape[2] = 1
+        # elif (self.cur_attension == self.DIRECTION_RIGHT):
+        #     shape[3] = 1
 
-        if (self.cur_sel_color >= 0 and self.cur_sel_color <= 9):
-            shape[self.cur_sel_color + 4] = 1
+        # if (self.cur_sel_color >= 0 and self.cur_sel_color <= 9):
+        #     shape[self.cur_sel_color + 4] = 1
 
         return features
 
@@ -324,42 +330,93 @@ class GameEngine:
         self.cur_sel = idx
 
     def select_shape_by_color(self, color):
+        necessary = (not self.has_shape_selected() and self.has_color_shape(color))
+
+        self.unselect_all_shape()
+
         for shape in self.shape_list:
-            shape.selected = (shape.get_color() == color)
+            if (shape.get_color() == color):
+                shape.selected = True
+
+        return not necessary
 
     def select_target_by_color(self, color):
+        necessary = self.has_shape_selected() and not self.has_shape_target_selected()
+
         for shape in self.shape_list:
             shape.selected_as_target = (shape.get_color() == color)
 
-    def select_shape_by_size_rank(self, idx):
-        if (idx < 0 or idx >= len(self.shape_list)): return
+        return necessary
 
-        duplidated = False
+    def select_shape_by_size_rank(self, idx):
+        # size 有大小相同的元素
+        size_list = list(map(lambda shape: len(shape.grid_list), self.shape_list))
+        if (np.unique(size_list) < len(size_list)):
+            return False
+
+        if (idx < 0 or idx >= len(self.shape_list)):
+            return False
+
+        necessary = (not self.has_shape_selected)
+
+        self.unselect_all_shape()
+
+        #pdb.set_trace()
 
         r = sorted(self.shape_list, key=functools.cmp_to_key(lambda s1, s2: len(s1.grid_list) >= len(s2.grid_list)))
 
-        if r[idx].selected:
-            duplidated = True
+        if (idx >= 0 and idx < len(self.shape_list)):
+            r[idx].selected = True
 
-        for shape in self.shape_list:
-            shape.selected = False
+        return necessary
 
-        r[idx].selected = True
-
-        return duplidated
-
-    def change_2_color(self, color):
-        duplidated = False
+    def has_shape_selected(self):
+        found = False
 
         for shape in self.shape_list:
             if (shape.selected):
-                if (shape.get_color() == color):
-                    duplidated = True
+                found = True
+
+        return found
+
+    def has_shape_target_selected(self):
+        found = False
+
+        for shape in self.shape_list:
+            if (shape.selected_as_target):
+                found = True
+
+        return found
+
+    def has_color_shape(self, color):
+        found = False
+
+        for shape in self.shape_list:
+            if (shape.get_color() == color):
+                found = True
+
+        return found
+
+    def unselect_all_shape(self):
+        for shape in self.shape_list:
+            shape.selected = False
+            shape.selected_as_target = False
+
+    def change_2_color(self, color):
+        necessary = self.has_shape_selected()
+
+        for shape in self.shape_list:
+            if (shape.selected):
                 shape.change_color(color)
 
-        return duplidated
+        self.unselect_all_shape()
+
+        return necessary
 
     def collide_2_target(self):
+        if (not self.has_shape_selected() or not self.has_shape_target_selected()):
+            return False
+
         #pdb.set_trace()
         for target in self.shape_list:
             if (not target.selected_as_target): continue
@@ -380,6 +437,10 @@ class GameEngine:
                         self.move_hori_until_collision(True)
                     elif (x1 + w1 < x0): # move left
                         self.move_hori_until_collision(False)
+
+        self.unselect_all_shape()
+
+        return True
 
     def select_direct_attension(self, direction):
         self.cur_attension = direction
@@ -535,24 +596,24 @@ class GameEngine:
 
     def do_single_action(self, action):
         action += 1
-        duplidated = False
+        necessary = True
 
         if (action >= SingleAction.ACTION_SINGLE_SEL_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_SEL_COLOR_9.value):
             color = action - SingleAction.ACTION_SINGLE_SEL_COLOR_1.value + 1
-            self.select_shape_by_color(color)
+            necessary = self.select_shape_by_color(color)
         elif (action >= SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_9.value):
             color = action - SingleAction.ACTION_SINGLE_SEL_TARGET_COLOR_1.value + 1
-            self.select_target_by_color(color)
+            necessary = self.select_target_by_color(color)
         elif (action == SingleAction.ACTION_SINGLE_MOVE_TO_TARGET_UNTIL_COLISSION.value):
-            self.collide_2_target()
+            necessary = self.collide_2_target()
         elif (action >= SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value and action <= SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_5.value):
             idx = action - SingleAction.ACTION_SINGLE_SEL_SIZE_TOP_1.value
-            duplidated = self.select_shape_by_size_rank(idx)
+            necessary = self.select_shape_by_size_rank(idx)
         elif (action >= SingleAction.ACTION_SINGLE_CHANGE_COLOR_1.value and action <= SingleAction.ACTION_SINGLE_CHANGE_COLOR_9.value):
             color = action - SingleAction.ACTION_SINGLE_CHANGE_COLOR_1.value + 1
-            duplidated = self.change_2_color(color)
+            necessary = self.change_2_color(color)
 
-        return duplidated
+        return necessary
 
         # if (action == GameEngine.ACTION_SEL_0):
         #     self.select_shape(0)
@@ -598,12 +659,12 @@ class GameEngine:
         #     self.convert_2_color()
 
     def do_action(self, action):
-        duplidated = False
+        duplicated = False
 
         if (self.action_mode == 'combo'):
             self.do_com_action(action + 1)
         else:
-            duplidated = self.do_single_action(action)
+            duplicated = self.do_single_action(action)
 
         done = False
 
@@ -618,8 +679,10 @@ class GameEngine:
 
         self.features = self.shape_list_2_feature()
 
-        # if (duplidated):
-        #     progress -= 0.1
+        if (duplicated):
+            progress -= 0.1
+
+        #print('progress %2f' % progress)
 
         return self.features, progress, done, None
 
